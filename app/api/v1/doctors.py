@@ -24,6 +24,8 @@ async def doctor_subscribers(doctor_id: int):
         "doctor_id": doctor.doctor_id,
         "instagram": doctor.inst_subs_count,
         "telegram": doctor.tg_subs_count,
+        "telegram_short": doctor.telegram_short,
+        "telegram_text": doctor.telegram_text,
     }
 
 

@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 from typing import List
-from app.entities.doctor_subs import DoctorSubs, SocialNetworkType
 from clients.telegram import TelegramClient
+
+from app.entities.doctor_subs import SocialNetworkType, DoctorSubs
 from app.exception.domain_error import RequiredFieldError, UnavailableTelegramChannel, DoctorNotFound
+from app.api.dto.doctor_subs import DoctorSubsDTO
 
 
 class ApiService(object):
@@ -12,12 +14,23 @@ class ApiService(object):
         self.repository = repository
         self.tg_client = tg_client
 
-    def get_doctor_subscribers(self, doctor_id: int) -> DoctorSubs | None:
+    def get_doctor_subscribers(self, doctor_id: int) -> DoctorSubsDTO | None:
         try:
-            doctor = self.repository.get_doctor_subscribers(doctor_id)
+            doctor: DoctorSubs = self.repository.get_doctor_subscribers(doctor_id)
         except DoctorNotFound:
             return None
-        return doctor
+
+        return DoctorSubsDTO(
+            doctor_id=doctor.doctor_id,
+
+            inst_subs_count=doctor.inst_subs_count,
+            inst_last_updated_timestamp=doctor.inst_last_updated_timestamp,
+
+            tg_subs_count=doctor.tg_subs_count,
+            telegram_short=doctor.subs_short,
+            telegram_text=doctor.subs_text,
+            tg_last_updated_timestamp=doctor.tg_last_updated_timestamp,
+        )
 
     async def create_doctor(self, doctor_id: int, instagram_channel_name: str, telegram_channel_name: str) -> None:
         # todo пока фича только под тг работать будет

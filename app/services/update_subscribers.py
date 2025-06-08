@@ -38,7 +38,6 @@ class UpdateSubscribersService(object):
         for channel in telegram_channels:
             try:
                 subs_count = await self.telegram_client.get_chat_subscribers(channel.telegram_channel_name)
-                print(f"Количество подписчиков ТГ {channel.telegram_channel_name} = {subs_count}")
                 self.repo.update_telegram_subscribers(channel.doctor_id, subs_count)
             except Exception as ex:
                 logger.error("error updating telegram subscribers", ex)
