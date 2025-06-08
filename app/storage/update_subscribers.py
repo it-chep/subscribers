@@ -70,7 +70,7 @@ class UpdateSubscribersRepository:
                     _id=row[0],
                     doctor_id=row[1],
                     telegram_channel_name=row[2],
-                    tg_subs_count=row[3],
+                    tg_subs_count=row[3] or 0,
                     tg_last_updated_timestamp=row[4]
                 ) for row in result
             ]

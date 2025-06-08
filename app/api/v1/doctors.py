@@ -4,6 +4,7 @@ from starlette.responses import JSONResponse
 
 from app.init_logic import api_service
 from app.api.v1.serializers import DoctorCreateBody, DoctorUpdateBody
+from app.exception.domain_error import RequiredFieldError, UnavailableTelegramChannel, DoctorNotFound
 
 router = APIRouter()
 
@@ -15,8 +16,8 @@ async def doctor_subscribers(doctor_id: int):
 
     if not doctor:
         return JSONResponse(
-            status_code=404,
-            content={"message": "Doctor not found"}
+            status_code=status.HTTP_404_NOT_FOUND,
+            content={"message": "Доктор не найден"}
         )
 
     return {
@@ -31,22 +32,22 @@ async def filter_info():
     """
     Информация для отображения фильтров. Возвращает список доступных соцсетей для фильтрации по подписчикам
     """
-    messangers = api_service.get_filter_info()
+    messengers = api_service.get_filter_info()
     return JSONResponse(
-        status_code=200,
+        status_code=status.HTTP_200_OK,
         content={
-            "messangers": messangers
+            "messengers": messengers
         }
     )
 
 
 @router.get('/doctors/filter/')
 async def doctors_filter(
-        social_media: str = Query(None, description="Соцсеть, по которой фильтруем подписчиков"),
-        min_subscribers: str = Query(None, description="Минимальное количество подписчиков"),
-        max_subscribers: str = Query(None, description="Максимальное количество подписчиков"),
-        offset: str = Query(None, description="Офсет поиска"),
-        limit: str = Query(None, description="Лимит поиска для страницы"),
+        social_media: str = Query(None, description="Соцсеть, по которой фильтруем подписчиков - tg"),
+        min_subscribers: str = Query(None, description="Минимальное количество подписчиков - default 0"),
+        max_subscribers: str = Query(None, description="Максимальное количество подписчиков - default 100"),
+        offset: str = Query(None, description="Офсет поиска - default 0"),
+        limit: str = Query(None, description="Лимит поиска для страницы - default 30"),
 ):
     """
     Возвращает докторов отфильтрованных по переданному значению количества подписчиков
@@ -91,10 +92,10 @@ async def doctors_filter(
     )
 
     return JSONResponse(
-        status_code=200,
+        status_code=status.HTTP_200_OK,
         content={
-            "min_followers": min_subscribers,
-            "max_followers": max_subscribers,
+            "min_subscribers": min_subscribers,
+            "max_subscribers": max_subscribers,
             "offset": offset,
             "limit": limit,
             "doctors_ids": doctors_ids,
@@ -105,16 +106,40 @@ async def doctors_filter(
 @router.post('/doctors/create/')
 async def create_doctor(request: DoctorCreateBody):
     """Создает нового доктора в базе"""
-    api_service.create_doctor(request.doctor_id, request.instagram, request.telegram)
+    try:
+        await api_service.create_doctor(request.doctor_id, request.instagram, request.telegram)
+    except RequiredFieldError as e:
+        return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST, content={"message": str(e)})
+    except UnavailableTelegramChannel as e:
+        return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST, content={"message": str(e)})
 
     return JSONResponse(
-        status_code=200,
-        content={"message": "success"}
+        status_code=status.HTTP_200_OK,
+        content={"message": f"Успешно создал запись DOC: {request.doctor_id}, канал:{request.telegram}"}
     )
 
 
 @router.patch('/doctors/{doctor_id}/')
 async def update_doctor(request: DoctorUpdateBody):
     """Обновляет информацию у доктора"""
-    api_service.update_doctor(request.doctor_id, request)
-    return
+    # api_service.update_doctor(request.doctor_id, request)
+    # return JSONResponse(
+    #     status_code=status.HTTP_200_OK,
+    #     content={"message": f"Успешно обновил запись DOC: {request.doctor_id}, канал:{request.telegram}"}
+    # )
+
+    return JSONResponse(
+        status_code=status.HTTP_200_OK,
+        content={"message": f"Фича в разработке"}
+    )
+
+# todo
+# @router.post('/doctors/migrate')
+# async def migrate_doctors(request: DoctorCreateBody):
+#     """Мигрирует докторов в базу"""
+#     api_service.create_doctor(request.doctor_id, request.instagram, request.telegram)
+#
+#     return JSONResponse(
+#         status_code=status.HTTP_200_OK,,
+#         content={"message": "success"}
+#     )

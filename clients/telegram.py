@@ -1,4 +1,6 @@
 import pyrogram
+
+from app.exception.domain_error import IsNotTelegramChannel
 from config.config import app_config
 
 CLIENT_NAME = "medblogers_base"
@@ -28,7 +30,11 @@ class TelegramClient(object):
 
         try:
             channel = await self.client.get_chat(chat_id)
+            if not channel.members_count:
+                raise IsNotTelegramChannel(channel_name=chat_id)
+
             return channel.members_count
+
         except Exception as e:
             print(f"Error getting subscribers in TelegramClient.get_chat_subscribers: {e}")
-            raise
+            raise e

@@ -23,5 +23,6 @@ update_subs_service = UpdateSubscribersService(
 )
 
 api_service = ApiService(
-    repository=api_repo
+    repository=api_repo,
+    tg_client=telegram_client
 )
