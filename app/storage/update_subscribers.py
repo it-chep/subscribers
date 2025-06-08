@@ -11,15 +11,15 @@ class UpdateSubscribersRepository:
     def get_instagram_channels(self) -> List[DoctorSubs]:
         """Получает список всех докторов с их Instagram-каналами"""
         query = """
-            SELECT 
+            select 
                 id, 
                 doctor_id, 
                 instagram_channel_name,
                 inst_subs_count,
                 inst_last_updated
-            FROM doctors
-            WHERE instagram_channel_name IS NOT NULL
-            AND instagram_channel_name != ''
+            from doctors
+            where instagram_channel_name is not null
+            and instagram_channel_name != ''
         """
 
         try:
@@ -40,11 +40,11 @@ class UpdateSubscribersRepository:
     def update_instagram_subscribers(self, doctor_id: int, subscribers: int):
         """Обновляет количество подписчиков в Instagram"""
         query = """
-            UPDATE doctors
-            SET 
+            update doctors
+            set 
                 inst_subs_count = %s,
-                inst_last_updated = NOW()
-            WHERE doctor_id = %s
+                inst_last_updated = now()
+            where doctor_id = %s
         """
         self.db.execute(query, (subscribers, doctor_id))
         self.db.commit()
@@ -52,15 +52,15 @@ class UpdateSubscribersRepository:
     def get_telegram_channels(self) -> List[DoctorSubs]:
         """Получает список всех докторов с их Telegram-каналами"""
         query = """
-            SELECT 
+            select 
                 id, 
                 doctor_id, 
                 telegram_channel_name,
                 tg_subs_count,
                 tg_last_updated
-            FROM doctors
-            WHERE telegram_channel_name IS NOT NULL
-            AND telegram_channel_name != ''
+            from doctors
+            where telegram_channel_name is not null
+            and telegram_channel_name != ''
         """
 
         try:
@@ -81,11 +81,11 @@ class UpdateSubscribersRepository:
     def update_telegram_subscribers(self, doctor_id: int, subscribers: int):
         """Обновляет количество подписчиков в Telegram"""
         query = """
-            UPDATE doctors
-            SET 
+            update doctors
+            set 
                 tg_subs_count = %s,
-                tg_last_updated = NOW()
-            WHERE doctor_id = %s
+                tg_last_updated = now()
+            where doctor_id = %s
         """
         self.db.execute(query, (subscribers, doctor_id))
         self.db.commit()

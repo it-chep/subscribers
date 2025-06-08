@@ -1,6 +1,4 @@
-import asyncio
-import logging
-from app.main import update_subs_service, celeryApp
+# from main import celeryApp
 
 # logger = logging.getLogger(__name__)
 

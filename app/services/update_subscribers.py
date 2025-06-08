@@ -18,19 +18,19 @@ class UpdateSubscribersService(object):
         # self.instagram_client = instagram_client
         self.telegram_client = telegram_client
 
-    async def _update_inst_subscribers(self):
-        """ Обновляет количество подписчиков в инсте """
-        instagram_channels = self.repo.get_instagram_channels()
-        for channel in instagram_channels:
-            try:
-                subs_count = await self.instagram_client.get_profile_subscribers(channel.instagram_channel_name)
-                print(f"Количество подписчиков INST {channel.instagram_channel_name} = {subs_count}")
-                self.repo.update_instagram_subscribers(channel.doctor_id, subs_count)
-
-                time.sleep(60)
-            except Exception as ex:
-                logger.error("error updating instagram subscribers", ex)
-                continue
+    # async def _update_inst_subscribers(self):
+    #     """ Обновляет количество подписчиков в инсте """
+    #     instagram_channels = self.repo.get_instagram_channels()
+    #     for channel in instagram_channels:
+    #         try:
+    #             subs_count = await self.instagram_client.get_profile_subscribers(channel.instagram_channel_name)
+    #             print(f"Количество подписчиков INST {channel.instagram_channel_name} = {subs_count}")
+    #             self.repo.update_instagram_subscribers(channel.doctor_id, subs_count)
+    #
+    #             time.sleep(60)
+    #         except Exception as ex:
+    #             logger.error("error updating instagram subscribers", ex)
+    #             continue
 
     async def _update_tg_subscribers(self):
         """ Обновляет количество подписчиков в тг """

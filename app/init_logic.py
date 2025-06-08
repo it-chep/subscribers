@@ -2,8 +2,8 @@ from app.services.api import ApiService
 from app.storage.api import ApiRepository
 from clients.telegram import TelegramClient
 from clients.instagram import AnonymousClient, WithLoginClient
-from services.update_subscribers import UpdateSubscribersService
-from storage.update_subscribers import UpdateSubscribersRepository
+from app.services.update_subscribers import UpdateSubscribersService
+from app.storage.update_subscribers import UpdateSubscribersRepository
 
 # инициализация клиентов
 telegram_client = TelegramClient()

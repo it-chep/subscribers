@@ -2,8 +2,8 @@ import asyncio
 from contextlib import asynccontextmanager
 import uvicorn
 from fastapi import FastAPI
-import api.v1.doctors as apiV1
-from app.init_logic import update_subs_service
+import app.api.v1.doctors as apiV1
+from app.init_logic import update_subs_service, telegram_client
 
 
 @asynccontextmanager
@@ -33,6 +33,16 @@ async def run_periodic_updates():
         except Exception as e:
             print(f"Update error: {e}")
             await asyncio.sleep(30)
+
+# # todo это для создания сессии телеграм на серваке
+# async def main():
+#     tg_cl = telegram_client
+#     await tg_cl.start()
+#     print("Вы успешно авторизованы!")
+#
+#
+# if __name__ == '__main__':
+#     asyncio.run(main())
 
 
 if __name__ == '__main__':
