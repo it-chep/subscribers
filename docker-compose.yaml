@@ -33,6 +33,15 @@ services:
       retries: 3
       start_period: 5s
 
+  pgadmin:
+    container_name: pgadmin
+    image: dpage/pgadmin4
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD}
+      PGADMIN_LISTEN_PORT: 5050
+    ports:
+      - "5050:5050"
 
 volumes:
   postgres_data:
