@@ -70,9 +70,6 @@ async def doctors_filter(
     - doctors_ids: айдишники докторов, которые подходят под условия фильтрации
     """
 
-    if not limit or int(limit) == 0:
-        limit = 30
-
     if not offset:
         offset = 0
 
@@ -86,7 +83,6 @@ async def doctors_filter(
         min_subscribers = int(min_subscribers)
         max_subscribers = int(max_subscribers)
         offset = int(offset)
-        limit = int(limit)
     except Exception as e:
         return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST, content=str(e))
 
@@ -95,7 +91,6 @@ async def doctors_filter(
         min_subscribers,
         max_subscribers,
         offset,
-        limit,
     )
 
     return JSONResponse(
@@ -104,7 +99,6 @@ async def doctors_filter(
             "min_subscribers": min_subscribers,
             "max_subscribers": max_subscribers,
             "offset": offset,
-            "limit": limit,
             "doctors_ids": doctors_ids,
         }
     )

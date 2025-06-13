@@ -53,14 +53,12 @@ class ApiService(object):
             min_subscribers: int,
             max_subscribers: int,
             offset: int,
-            limit: int,
     ):
         if not social_media or social_media == "" or social_media == SocialNetworkType.ALL:
             return self.repository.doctors_all_filter(
                 min_subscribers,
                 max_subscribers,
                 offset,
-                limit,
             )
 
         if social_media in (
@@ -74,7 +72,6 @@ class ApiService(object):
                 min_subscribers,
                 max_subscribers,
                 offset,
-                limit,
             )
 
         return []

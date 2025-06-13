@@ -6,6 +6,7 @@ from clients.postgres import Database
 from app.entities.doctor_subs import DoctorSubs
 from app.exception.domain_error import DoctorNotFound
 
+
 class ApiRepository:
 
     def __init__(self):
@@ -78,7 +79,6 @@ class ApiRepository:
             min_subscribers: int,
             max_subscribers: int,
             offset: int,
-            limit: int,
     ) -> List[int]:
         query = f"""
             select 
@@ -87,7 +87,6 @@ class ApiRepository:
             where (inst_subs_count > %s and inst_subs_count < %s)
                 or (tg_subs_count > %s and tg_subs_count < %s)
             offset %s 
-            limit %s;
         """
 
         doctor_ids = list()
@@ -95,7 +94,7 @@ class ApiRepository:
         try:
             results = self.db.select(
                 query,
-                (min_subscribers, max_subscribers, min_subscribers, max_subscribers, offset, limit)
+                (min_subscribers, max_subscribers, min_subscribers, max_subscribers, offset)
             )
             for result in results:
                 doctor_ids.append(result[0])
@@ -111,7 +110,6 @@ class ApiRepository:
             min_subscribers: int,
             max_subscribers: int,
             offset: int,
-            limit: int,
     ):
         subs_count = f"{social_media}_subs_count"
         query = f"""
@@ -120,7 +118,6 @@ class ApiRepository:
             from doctors
             where {subs_count} > %s and {subs_count} < %s
             offset %s 
-            limit %s;
         """
 
         doctor_ids = list()
@@ -128,7 +125,7 @@ class ApiRepository:
         try:
             results = self.db.select(
                 query,
-                (min_subscribers, max_subscribers, offset, limit)
+                (min_subscribers, max_subscribers, offset)
             )
             for result in results:
                 doctor_ids.append(result[0])
