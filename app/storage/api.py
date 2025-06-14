@@ -29,7 +29,7 @@ class ApiRepository:
 
         try:
             doctor = DoctorSubs(
-                _id=result[0],
+                internal_id=result[0],
                 doctor_id=result[1],
                 instagram_channel_name=result[2] or "",
                 inst_subs_count=result[3] or 0,

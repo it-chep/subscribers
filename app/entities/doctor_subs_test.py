@@ -15,7 +15,7 @@ from app.entities.doctor_subs import DoctorSubs
 ])
 def test_subs_short(count, expected):
     doctor = DoctorSubs(
-        _id=1,
+        internal_id=1,
         doctor_id=1,
         inst_subs_count=100,
         instagram_channel_name="test",
@@ -50,7 +50,7 @@ def test_subs_short(count, expected):
 ])
 def test_subs_text(count, expected):
     doctor = DoctorSubs(
-        _id=1,
+        internal_id=1,
         doctor_id=1,
         inst_subs_count=100,
         instagram_channel_name="test",

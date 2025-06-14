@@ -32,6 +32,33 @@ class UpdateSubscribersService(object):
     #             logger.error("error updating instagram subscribers", ex)
     #             continue
 
+    async def _batched_update_tg_subscribers(self):
+        # получаем последнего обновленного доктора
+        result = self.repo.get_last_updated_doctor()
+        if len(result) == 0:
+            return
+        # пока у нас обновляется только 1 строчка
+        last_updated_doctor = result[0]
+
+        # Получаем каналы с офсетом
+        telegram_channels = self.repo.get_telegram_channels_with_offset(last_updated_doctor.id_in_subscribers)
+        # если мы всех обошли, то начинаем с id = 1, то есть offset = 0
+        if len(telegram_channels) == 0:
+            telegram_channels = self.repo.get_telegram_channels_with_offset(offset=0)
+
+        for channel in telegram_channels:
+            try:
+                # получаем подписчиков у доктора
+                subs_count = await self.telegram_client.get_chat_subscribers(chat_id=channel.telegram_channel_name)
+                # обновляем подписчиков доктора
+                self.repo.update_telegram_subscribers(doctor_id=channel.doctor_id, subscribers=subs_count)
+                # комитим id последнего доктора
+                self.repo.commit_update_subscribers(subscribers_id=channel.internal_id, doctor_id=channel.doctor_id)
+            except Exception as ex:
+                logger.error("error updating telegram subscribers", ex)
+                continue
+
+
     async def _update_tg_subscribers(self):
         """ Обновляет количество подписчиков в тг """
         telegram_channels = self.repo.get_telegram_channels()
@@ -48,5 +75,5 @@ class UpdateSubscribersService(object):
         # параллельно обновляем подписчиков в инсте и в тг
         await asyncio.gather(
             # self._update_inst_subscribers(),
-            self._update_tg_subscribers()
+            self._batched_update_tg_subscribers()
         )

@@ -16,7 +16,7 @@ class SocialNetworkType(str, Enum):
 
 
 class DoctorSubs(BaseModel):
-    _id: int
+    internal_id: int
     doctor_id: int
     # время последнего обновления подписчиков
     inst_last_updated_timestamp: Optional[datetime.datetime] = None
@@ -72,3 +72,14 @@ class DoctorSubs(BaseModel):
                 text = "подписчиков"
 
         return text
+
+
+class UpdatedSubsQueue(BaseModel):
+    # id в базе
+    _id: int
+    # id доктора в базе subscribers
+    id_in_subscribers: int
+    # doctor_id доктора в базе subscribers
+    last_updated_id: int
+    # последнее время обновление
+    last_updated_at: Optional[datetime.datetime] = None
