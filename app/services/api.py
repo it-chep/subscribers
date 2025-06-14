@@ -38,8 +38,9 @@ class ApiService(object):
             raise RequiredFieldError(field_name=telegram_channel_name)
 
         try:
-            await self.tg_client.get_chat_subscribers(telegram_channel_name)
+            members_count = await self.tg_client.get_chat_subscribers(telegram_channel_name)
         except Exception as e:
+            print("Ошибка при создании доктора(получение подписчиков)", e)
             raise UnavailableTelegramChannel(channel_name=telegram_channel_name)
 
         return self.repository.create_doctor_subscriber(doctor_id, instagram_channel_name, telegram_channel_name)
