@@ -27,7 +27,6 @@ async def run_periodic_updates():
         try:
             await update_subs_service.update_subscribers()
             await asyncio.sleep(60)
-            # await asyncio.sleep(60 * 60 * 24 * 3) # засыпаем на 3 дня
         except asyncio.CancelledError:
             break
         except Exception as e:
