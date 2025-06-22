@@ -20,17 +20,26 @@ async def doctor_subscribers(doctor_id: int):
             content={"message": "Доктор не найден"}
         )
 
-    formatted_date = None
+    tg_formatted_date = None
     if doctor.tg_last_updated_timestamp:
-        formatted_date = doctor.tg_last_updated_timestamp.strftime("%d.%m.%Y")
+        tg_formatted_date = doctor.tg_last_updated_timestamp.strftime("%d.%m.%Y")
+
+    inst_formatted_date = None
+    if doctor.inst_last_updated_timestamp:
+        inst_formatted_date = doctor.inst_last_updated_timestamp.strftime("%d.%m.%Y")
 
     return {
         "doctor_id": doctor.doctor_id,
+
         "instagram": doctor.inst_subs_count,
+        "instagram_short": doctor.telegram_short,
+        "instagram_text": doctor.telegram_text,
+        "instagram_last_updated_date": inst_formatted_date,
+
         "telegram": doctor.tg_subs_count,
         "telegram_short": doctor.telegram_short,
         "telegram_text": doctor.telegram_text,
-        "tg_last_updated_date": formatted_date
+        "tg_last_updated_date": tg_formatted_date
     }
 
 

@@ -32,8 +32,8 @@ class DoctorSubs(BaseModel):
     # название аккаунта
     telegram_channel_name: str = ""
 
-    @property
-    def subs_short(self) -> str:
+    @staticmethod
+    def subs_short(count) -> str:
         """
         Форматирует количество подписчиков в сокращенный вид:
         - 1,3м (1.3 миллиона)
@@ -41,7 +41,6 @@ class DoctorSubs(BaseModel):
         - 10,3к (10.3 тысячи)
         - 9999 (менее 10 тысяч)
         """
-        count = self.tg_subs_count
 
         if count >= 1_000_000:
             short = f"{count / 1_000_000:0.1f}".replace('.', ',') + 'м'
@@ -54,12 +53,12 @@ class DoctorSubs(BaseModel):
 
         return short
 
-    @property
-    def subs_text(self) -> str:
+    @staticmethod
+    def subs_text(count) -> str:
         """
         Возвращает правильную форму слова "подписчик" в зависимости от количества
         """
-        count = self.tg_subs_count % 100
+        count = count % 100
         if 11 <= count % 100 <= 19:
             text = "подписчиков"
         else:

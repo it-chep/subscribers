@@ -8,9 +8,17 @@ from typing import Optional
 @dataclass
 class DoctorSubsDTO:
     doctor_id: int
-    inst_last_updated_timestamp: Optional[datetime.datetime]
-    inst_subs_count: int
 
+    ### Instagram
+    inst_last_updated_timestamp: Optional[datetime.datetime]
+    # количество подписчиков
+    inst_subs_count: int
+    # сокращенный вид количества подписчиков "1,3м", "300к", "9999", "10,3к"
+    instagram_short: str
+    # текст отображения "подписчика", "подписчиков"
+    instagram_text: str
+
+    ### Telegram
     tg_last_updated_timestamp: Optional[datetime.datetime]
     # количество подписчиков
     tg_subs_count: int

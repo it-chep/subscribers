@@ -155,3 +155,74 @@ class UpdateSubscribersRepository:
         except Exception as e:
             print(f"Error fetching last_updated_doctor: {str(e)}")
             raise
+
+    # TODO СДЕЛАТЬ НОРМАЛЬНО В 1 таблицу очередей и не дублировать
+    def commit_update_instagram_subscribers(self, subscribers_id: int, doctor_id: int):
+        """Коммитит обновление подписчиков в update_subscribers_queue"""
+        query = """
+                insert into update_instagram_subscribers_queue (id, last_updated_id, last_updated_at, id_in_subscribers)
+                values (1, %s, now(), %s)
+                on conflict (id) do update set last_updated_id   = excluded.last_updated_id,
+                                               last_updated_at   = now(),
+                                               id_in_subscribers = excluded.id_in_subscribers
+                """
+        self.db.execute(query, (doctor_id, subscribers_id))
+        self.db.commit()
+
+    def get_last_updated_instagram_doctor(self) -> List[UpdatedSubsQueue]:
+        """Получение данных об обновлении подписчиков из update_subscribers_queue"""
+        query = """
+                select id, last_updated_id, id_in_subscribers, last_updated_at
+                from update_instagram_subscribers_queue;
+                """
+
+        try:
+            result = self.db.select(query)
+            # если никого нет, значит это первое обновление
+            if len(result) == 0:
+                doctors = self.get_instagram_channels_with_offset(0)
+                self.commit_update_instagram_subscribers(doctors[0].internal_id, doctors[0].doctor_id)
+                return []
+
+            return [
+                UpdatedSubsQueue(
+                    _id=row[0],
+                    last_updated_id=row[1],
+                    id_in_subscribers=row[2],
+                    last_updated_at=row[3],
+                ) for row in result
+            ]
+        except Exception as e:
+            print(f"Error fetching last_updated_doctor: {str(e)}")
+            raise
+
+    def get_instagram_channels_with_offset(self, offset: int) -> List[DoctorSubs]:
+        """Получает список всех докторов с их INSTAGRAM-каналами с оффсетом и лимитом для обновления батчами"""
+        query = """
+                select id,
+                       doctor_id,
+                       instagram_channel_name,
+                       inst_subs_count,
+                       inst_last_updated
+                from doctors
+                where instagram_channel_name is not null
+                  and instagram_channel_name != ''
+                  and id > %s
+                order by id
+                limit 2
+                """
+
+        try:
+            result = self.db.select(query, (offset,))
+            return [
+                DoctorSubs(
+                    internal_id=row[0],
+                    doctor_id=row[1],
+                    instagram_channel_name=row[2],
+                    inst_subs_count=row[3] or 0,
+                    inst_last_updated_timestamp=row[4]
+                ) for row in result
+            ]
+        except Exception as e:
+            print(f"Error fetching telegram channels with offset: {str(e)}")
+            raise

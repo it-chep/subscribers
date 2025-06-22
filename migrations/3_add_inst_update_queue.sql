@@ -1,5 +1,5 @@
--- telegram queue
-create table if not exists update_subscribers_queue
+-- instagram queue
+create table if not exists update_instagram_subscribers_queue
 (
     id              serial primary key,
     id_in_subscribers bigint,

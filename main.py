@@ -3,7 +3,7 @@ from contextlib import asynccontextmanager
 import uvicorn
 from fastapi import FastAPI
 import app.api.v1.doctors as apiV1
-from app.init_logic import update_subs_service, telegram_client
+from app.init_logic import update_subs_service, telegram_client, instagram_client
 
 
 @asynccontextmanager
@@ -33,6 +33,7 @@ async def run_periodic_updates():
             print(f"Update error: {e}")
             await asyncio.sleep(30)
 
+
 # # todo это для создания сессии телеграм на серваке
 # async def main():
 #     tg_cl = telegram_client
@@ -43,6 +44,14 @@ async def run_periodic_updates():
 # if __name__ == '__main__':
 #     asyncio.run(main())
 
+## todo это для создания сессии инстаграмма на серваке
+# async def main():
+#     inst_cl = instagram_client
+#     print("Вы успешно авторизованы!")
+#
+#
+# if __name__ == '__main__':
+#     asyncio.run(main())
 
 if __name__ == '__main__':
     uvicorn.run(

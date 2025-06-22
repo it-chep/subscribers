@@ -10,9 +10,10 @@ from app.api.dto.doctor_subs import DoctorSubsDTO
 
 class ApiService(object):
 
-    def __init__(self, repository, tg_client: TelegramClient):
+    def __init__(self, repository, tg_client: TelegramClient, notification_client):
         self.repository = repository
         self.tg_client = tg_client
+        self.notification_client = notification_client
 
     def get_doctor_subscribers(self, doctor_id: int) -> DoctorSubsDTO | None:
         try:
@@ -25,10 +26,12 @@ class ApiService(object):
 
             inst_subs_count=doctor.inst_subs_count,
             inst_last_updated_timestamp=doctor.inst_last_updated_timestamp,
+            instagram_short=doctor.subs_short(doctor.inst_subs_count),
+            instagram_text=doctor.subs_text(doctor.inst_subs_count),
 
             tg_subs_count=doctor.tg_subs_count,
-            telegram_short=doctor.subs_short,
-            telegram_text=doctor.subs_text,
+            telegram_short=doctor.subs_short(doctor.tg_subs_count),
+            telegram_text=doctor.subs_text(doctor.tg_subs_count),
             tg_last_updated_timestamp=doctor.tg_last_updated_timestamp,
         )
 
@@ -40,7 +43,7 @@ class ApiService(object):
         try:
             members_count = await self.tg_client.get_chat_subscribers(telegram_channel_name)
         except Exception as e:
-            print("Ошибка при создании доктора(получение подписчиков)", e)
+            self.notification_client.send_warning_not_found_doctor(doctor_id, "Создание пользователя в Telegram")
             raise UnavailableTelegramChannel(channel_name=telegram_channel_name)
 
         return self.repository.create_doctor_subscriber(doctor_id, instagram_channel_name, telegram_channel_name)

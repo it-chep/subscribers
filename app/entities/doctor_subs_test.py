@@ -22,7 +22,7 @@ def test_subs_short(count, expected):
         tg_subs_count=count,
         telegram_channel_name="test",
     )
-    result = doctor.subs_short
+    result = doctor.subs_short(count)
     assert result == expected
 
 
@@ -57,4 +57,5 @@ def test_subs_text(count, expected):
         tg_subs_count=count,
         telegram_channel_name="test",
     )
-    assert doctor.subs_text == expected
+    text = doctor.subs_text(count)
+    assert text == expected
