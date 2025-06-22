@@ -10,14 +10,14 @@ class UpdateSubscribersService(object):
             self,
             repository,
             # anonim_instagram_client,
-            instagram_client,
+            # instagram_client,
             telegram_client,
             notification_client
     ):
         self.repo = repository
         self.notification_client = notification_client
         # self.anonim_instagram_client = anonim_instagram_client
-        self.instagram_client = instagram_client
+        # self.instagram_client = instagram_client
         self.telegram_client = telegram_client
 
     async def _batched_update_inst_subscribers(self):
@@ -93,6 +93,6 @@ class UpdateSubscribersService(object):
         """ Обновляет количество подписчиков """
         # параллельно обновляем подписчиков в инсте и в тг
         await asyncio.gather(
-            self._batched_update_inst_subscribers(),
+            # self._batched_update_inst_subscribers(),
             self._batched_update_tg_subscribers()
         )

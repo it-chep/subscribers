@@ -9,7 +9,7 @@ from app.storage.update_subscribers import UpdateSubscribersRepository
 # инициализация клиентов
 telegram_client = TelegramClient()
 # anonym_instagram_client = AnonymousClient()
-instagram_client = WithLoginClient()
+# instagram_client = WithLoginClient()
 notification_client = SaleBotClient()
 # ____________________________________________
 
@@ -22,7 +22,7 @@ api_repo = ApiRepository()
 update_subs_service = UpdateSubscribersService(
     repository=update_subs_repo,
     # anonim_instagram_client=anonym_instagram_client,
-    instagram_client=instagram_client,
+    # instagram_client=instagram_client,
     telegram_client=telegram_client,
     notification_client=notification_client
 )
