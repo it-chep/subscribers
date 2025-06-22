@@ -23,10 +23,16 @@ class InstagramConfig(BaseModel):
     password: str
 
 
+class SalebotConfig(BaseModel):
+    api_key: str
+    admin_chat_id: int
+
+
 class Config(BaseModel):
     db: DbConfig
     telegram: TelegramConfig
     instagram: InstagramConfig
+    salebot: SalebotConfig
 
     @classmethod
     def load(cls, path: str = "config/values.yaml") -> "Config":
