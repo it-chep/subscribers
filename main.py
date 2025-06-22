@@ -3,7 +3,7 @@ from contextlib import asynccontextmanager
 import uvicorn
 from fastapi import FastAPI
 import app.api.v1.doctors as apiV1
-from app.init_logic import update_subs_service, telegram_client, instagram_client
+from app.init_logic import update_subs_service, telegram_client
 
 
 @asynccontextmanager
