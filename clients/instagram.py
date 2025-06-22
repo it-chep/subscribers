@@ -31,7 +31,7 @@ class WithLoginClient(object):
 
     def __init__(self):
         self.client = Client()
-        session_file = "../instagram_session.json"
+        session_file = "/app/instagram_session.json"
         try:
             self.client.load_settings(session_file)
             self.client.login(app_config.instagram.username, app_config.instagram.password)
