@@ -95,12 +95,22 @@ async def doctors_filter(
     except Exception as e:
         return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST, content=str(e))
 
-    doctors_ids = api_service.doctors_filter(
+    doctors = api_service.doctors_filter(
         social_media,
         min_subscribers,
         max_subscribers,
         offset,
     )
+
+    doctors_list = []
+    for doctor in doctors:
+        doctors_list.append({
+            "doctor": {
+                "doctor_id": doctor.doctor_id,
+                "telegram_short": doctor.telegram_short,
+                "telegram_text": doctor.telegram_text,
+            }
+        })
 
     return JSONResponse(
         status_code=status.HTTP_200_OK,
@@ -108,10 +118,9 @@ async def doctors_filter(
             "min_subscribers": min_subscribers,
             "max_subscribers": max_subscribers,
             "offset": offset,
-            "doctors_ids": doctors_ids,
+            "doctors": doctors_list,
         }
     )
-
 
 @router.post('/doctors/create/')
 async def create_doctor(request: DoctorCreateBody):
@@ -130,19 +139,25 @@ async def create_doctor(request: DoctorCreateBody):
 
 
 @router.patch('/doctors/{doctor_id}/')
-async def update_doctor(request: DoctorUpdateBody):
+async def update_doctor(doctor_id: int, request: DoctorUpdateBody):
     """Обновляет информацию у доктора"""
-    # api_service.update_doctor(request.doctor_id, request)
-    # return JSONResponse(
-    #     status_code=status.HTTP_200_OK,
-    #     content={"message": f"Успешно обновил запись DOC: {request.doctor_id}, канал:{request.telegram}"}
-    # )
-
-    return JSONResponse(
-        status_code=status.HTTP_200_OK,
-        content={"message": f"Фича в разработке"}
-    )
-
+    try:
+        updated = await api_service.update_doctor(doctor_id, request.instagram, request.telegram)
+        if updated:
+            return JSONResponse(
+                status_code=status.HTTP_200_OK,
+                content={"message": f"Успешно обновил запись доктора ID: {doctor_id}, ТГ канал: {request.telegram}, ИНСТ: {request.instagram}"}
+            )
+        return JSONResponse(
+            status_code=status.HTTP_201_CREATED,
+            content={"message": f"Создал нового доктора ID: {doctor_id}, ТГ канал: {request.telegram}, ИНСТ: {request.instagram}"}
+        )
+    except Exception as e:
+        print(f"Ошибка при обновлении доктора {doctor_id}: {e}")
+        return JSONResponse(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            content={"message": f"Ошибка при обновлении доктора {doctor_id}"}
+        )
 # todo
 # @router.post('/doctors/migrate')
 # async def migrate_doctors(request: DoctorCreateBody):

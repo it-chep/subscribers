@@ -5,7 +5,7 @@ from clients.telegram import TelegramClient
 
 from app.entities.doctor_subs import SocialNetworkType, DoctorSubs
 from app.exception.domain_error import RequiredFieldError, UnavailableTelegramChannel, DoctorNotFound
-from app.api.dto.doctor_subs import DoctorSubsDTO
+from app.api.dto.doctor_subs import DoctorSubsDTO, DoctorSubsFilterDTO
 
 
 class ApiService(object):
@@ -57,29 +57,45 @@ class ApiService(object):
             min_subscribers: int,
             max_subscribers: int,
             offset: int,
-    ):
+    ) -> List[DoctorSubsFilterDTO]:
+        doctors_dto, doctor_subs = list(), list()
+
         if not social_media or social_media == "" or social_media == SocialNetworkType.ALL:
-            return self.repository.doctors_all_filter(
+            doctor_subs: list[DoctorSubs] = self.repository.doctors_all_filter(
                 min_subscribers,
                 max_subscribers,
                 offset,
             )
-
         if social_media in (
                 SocialNetworkType.VK,
                 SocialNetworkType.YOUTUBE,
                 SocialNetworkType.TELEGRAM,
                 SocialNetworkType.INSTAGRAM
         ):
-            return self.repository.doctors_filter(
+            doctor_subs: list[DoctorSubs] = self.repository.doctors_filter(
                 social_media,
                 min_subscribers,
                 max_subscribers,
                 offset,
             )
 
-        return []
+        for doctor_sub in doctor_subs:
+            doctors_dto.append(
+                DoctorSubsFilterDTO(
+                    doctor_id=doctor_sub.doctor_id,
+                    inst_subs_count=0,
+                    telegram_short=doctor_sub.subs_short(doctor_sub.tg_subs_count),
+                    telegram_text=doctor_sub.subs_text(doctor_sub.tg_subs_count),
+                )
+            )
 
-    async def update_doctor(self, ):
-        # todo
-        ...
+        return doctors_dto
+
+    async def update_doctor(self, doctor_id: int, instagram_channel_name: str, telegram_channel_name: str) -> bool:
+        """Обновление данных о докторе по его ID, если ID нет, то просто создаем доктора"""
+        try:
+            self.repository.update_doctor(doctor_id, instagram_channel_name, telegram_channel_name)
+            return True
+        except DoctorNotFound:
+            self.repository.create_doctor_subscriber(doctor_id, instagram_channel_name, telegram_channel_name)
+            return False

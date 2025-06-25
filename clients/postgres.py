@@ -21,6 +21,17 @@ class Database:
                 self.conn.rollback()
                 raise e
 
+    def execute_with_result(self, query: str, params=None):
+        with self.conn.cursor() as cursor:
+            try:
+                cursor.execute(query, params)
+                self.conn.commit()
+                affected_rows = cursor.rowcount
+                return affected_rows
+            except Exception as e:
+                self.conn.rollback()
+                raise e
+
     def select(self, query: str, params=None, fetch_one=False):
         with self.conn.cursor() as cursor:
             cursor.execute(query, params)

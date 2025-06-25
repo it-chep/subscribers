@@ -26,3 +26,14 @@ class DoctorSubsDTO:
     telegram_short: str
     # текст отображения "подписчика", "подписчиков"
     telegram_text: str
+
+
+@dataclass
+class DoctorSubsFilterDTO:
+    doctor_id: int
+    inst_subs_count: int
+
+    # сокращенный вид количества подписчиков "1,3м", "300к", "9999", "10,3к"
+    telegram_short: str
+    # текст отображения "подписчика", "подписчиков"
+    telegram_text: str
