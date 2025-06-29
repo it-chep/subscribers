@@ -1,4 +1,7 @@
+import asyncio
+
 import pyrogram
+from pyrogram.errors.exceptions import FloodWait, UserAlreadyParticipant
 
 from app.exception.domain_error import IsNotTelegramChannel
 from config.config import app_config
@@ -22,6 +25,24 @@ class TelegramClient(object):
             await self.client.start()
             self._is_connected = True
 
+    async def _get_subs_from_closed_channel(self, chat_id):
+        """Получение подписчиков из закрытого канала"""
+        # todo мб флаг в базке хранить
+        try:
+            channel = await self.client.join_chat(chat_id)
+        except UserAlreadyParticipant:
+            return await self._get_subs_from_open_channel(chat_id)
+
+        return channel.members_count or 0
+
+    async def _get_subs_from_open_channel(self, chat_id):
+        """Получение подписчиков из открытого канала"""
+        channel = await self.client.get_chat(chat_id)
+        if not channel.members_count:
+            raise IsNotTelegramChannel(channel_name=chat_id)
+
+        return channel.members_count
+
     async def get_chat_subscribers(self, chat_id: str) -> int:
         """Получение количества подписчиков канала"""
 
@@ -29,12 +50,12 @@ class TelegramClient(object):
             await self.start()
 
         try:
-            channel = await self.client.get_chat(chat_id)
-            if not channel.members_count:
-                raise IsNotTelegramChannel(channel_name=chat_id)
-
-            return channel.members_count
-
+            if "+" in chat_id:
+                return await self._get_subs_from_closed_channel(chat_id)
+            return await self._get_subs_from_open_channel(chat_id)
+        except FloodWait:
+            print("Нафлудили, спим 10 минут")
+            await asyncio.sleep(60 * 10)
         except Exception as e:
             print(f"Error getting subscribers in TelegramClient.get_chat_subscribers: {e}")
             raise e
