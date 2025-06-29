@@ -71,6 +71,13 @@ class DoctorSubs(BaseModel):
     # название аккаунта
     telegram_channel_name: str = ""
 
+class DoctorSubsByIDs(BaseModel):
+    doctor_id: int
+    # количество подписчиков
+    inst_subs_count: int = 0
+
+    # количество подписчиков
+    tg_subs_count: int = 0
 
 class UpdatedSubsQueue(BaseModel):
     # id в базе

@@ -8,6 +8,7 @@ from app.exception.domain_error import RequiredFieldError, UnavailableTelegramCh
 
 router = APIRouter()
 
+
 @router.get('/subscribers/count')
 async def doctor_subscribers():
     """Возвращает общее количество подписичок"""
@@ -22,7 +23,6 @@ async def doctor_subscribers():
         "subscribers_count_text": count_text,
         "last_updated": formatted_date,
     }
-
 
 
 @router.get('/subscribers/{doctor_id}/')
@@ -69,6 +69,40 @@ async def filter_info():
         status_code=status.HTTP_200_OK,
         content={
             "messengers": messengers
+        }
+    )
+
+
+@router.get('/doctors/by_ids/')
+async def info_by_ids(doctor_ids: str):
+    """
+    Получение информации о докторах по списку ID.
+    Формат запроса: /doctors/by_ids/?doctor_ids=1,2,3,4
+    """
+    # Преобразуем строку с ID в список чисел
+    ids_list = [int(id_str) for id_str in doctor_ids.split(',') if id_str.strip().isdigit()]
+
+    if not ids_list:
+        return JSONResponse(
+            status_code=status.HTTP_404_NOT_FOUND,
+            content={"message": "Не указаны ID пользователей"}
+        )
+
+    res_map = dict()
+    dtos = api_service.get_subscribers_by_doctor_ids(ids_list)
+    for dto in dtos:
+        res_map[dto.doctor_id] = {
+            "doctor_id": dto.doctor_id,
+            "instagram_subs_count": dto.inst_subs_count,
+            "instagram_subs_text": dto.instagram_text,
+            "telegram_subs_count": dto.tg_subs_count,
+            "telegram_subs_text": dto.telegram_text,
+        }
+
+    return JSONResponse(
+        status_code=status.HTTP_200_OK,
+        content={
+            "data": res_map
         }
     )
 
@@ -138,6 +172,7 @@ async def doctors_filter(
         }
     )
 
+
 @router.post('/doctors/create/')
 async def create_doctor(request: DoctorCreateBody):
     """Создает нового доктора в базе"""
@@ -162,11 +197,13 @@ async def update_doctor(doctor_id: int, request: DoctorUpdateBody):
         if updated:
             return JSONResponse(
                 status_code=status.HTTP_200_OK,
-                content={"message": f"Успешно обновил запись доктора ID: {doctor_id}, ТГ канал: {request.telegram}, ИНСТ: {request.instagram}"}
+                content={
+                    "message": f"Успешно обновил запись доктора ID: {doctor_id}, ТГ канал: {request.telegram}, ИНСТ: {request.instagram}"}
             )
         return JSONResponse(
             status_code=status.HTTP_201_CREATED,
-            content={"message": f"Создал нового доктора ID: {doctor_id}, ТГ канал: {request.telegram}, ИНСТ: {request.instagram}"}
+            content={
+                "message": f"Создал нового доктора ID: {doctor_id}, ТГ канал: {request.telegram}, ИНСТ: {request.instagram}"}
         )
     except Exception as e:
         print(f"Ошибка при обновлении доктора {doctor_id}: {e}")

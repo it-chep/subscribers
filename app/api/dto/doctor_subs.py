@@ -37,3 +37,16 @@ class DoctorSubsFilterDTO:
     telegram_short: str
     # текст отображения "подписчика", "подписчиков"
     telegram_text: str
+
+@dataclass
+class DoctorSubsByIDsDTO:
+    doctor_id: int
+    # количество подписчиков
+    inst_subs_count: str = "0"
+    # название аккаунта
+    instagram_text: str = ""
+
+    # количество подписчиков
+    tg_subs_count: str = "0"
+    # название аккаунта
+    telegram_text: str = ""

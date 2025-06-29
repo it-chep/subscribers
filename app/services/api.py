@@ -3,9 +3,9 @@ from __future__ import annotations
 from typing import List
 from clients.telegram import TelegramClient
 
-from app.entities.doctor_subs import SocialNetworkType, DoctorSubs, subs_short, subs_text
+from app.entities.doctor_subs import SocialNetworkType, DoctorSubs, subs_short, subs_text, DoctorSubsByIDs
 from app.exception.domain_error import RequiredFieldError, UnavailableTelegramChannel, DoctorNotFound
-from app.api.dto.doctor_subs import DoctorSubsDTO, DoctorSubsFilterDTO
+from app.api.dto.doctor_subs import DoctorSubsDTO, DoctorSubsFilterDTO, DoctorSubsByIDsDTO
 
 
 class ApiService(object):
@@ -38,6 +38,20 @@ class ApiService(object):
     def get_all_subscribers_count(self):
         subs_count, last_updated = self.repository.get_all_subscribers_count()
         return subs_short(subs_count), subs_text(subs_count), last_updated
+
+    def get_subscribers_by_doctor_ids(self, doctor_ids: list[int]) -> list[DoctorSubsByIDsDTO]:
+        result = []
+        doctors: list[DoctorSubsByIDs] = self.repository.get_subscribers_by_doctor_ids(doctor_ids)
+        for doctor in doctors:
+            result.append(DoctorSubsByIDsDTO(
+                doctor_id=doctor.doctor_id,
+                inst_subs_count=subs_short(doctor.inst_subs_count),
+                instagram_text=subs_text(doctor.inst_subs_count),
+                tg_subs_count=subs_short(doctor.tg_subs_count),
+                telegram_text=subs_text(doctor.tg_subs_count),
+            ))
+
+        return result
 
     async def create_doctor(self, doctor_id: int, instagram_channel_name: str, telegram_channel_name: str) -> None:
         # todo пока фича только под тг работать будет

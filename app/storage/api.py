@@ -2,7 +2,7 @@ import datetime
 from typing import List, Optional
 
 from clients.postgres import Database
-from app.entities.doctor_subs import DoctorSubs
+from app.entities.doctor_subs import DoctorSubs, DoctorSubsByIDs
 from app.exception.domain_error import DoctorNotFound
 
 
@@ -42,7 +42,33 @@ class ApiRepository:
 
         return doctor
 
-    def get_all_subscribers_count(self) ->(int, Optional[datetime.datetime]) :
+    def get_subscribers_by_doctor_ids(self, doctor_ids: list[int]) -> list[DoctorSubsByIDs]:
+        query = f"""
+            select
+                doctor_id, 
+                inst_subs_count,
+                tg_subs_count
+            from doctors 
+            where doctor_id = ANY(%s);
+        """
+        doctors = list()
+
+        try:
+            result = self.db.select(query, (doctor_ids,))
+
+            for r in result:
+                doctors.append(DoctorSubsByIDs(
+                    doctor_id=r[0],
+                    inst_subs_count=r[1] or 0,
+                    tg_subs_count=r[2] or 0,
+                ))
+
+        except Exception as e:
+            print("Ошибка при получении врачей по ids", e)
+
+        return doctors
+
+    def get_all_subscribers_count(self) -> (int, Optional[datetime.datetime]):
         query = f""" 
             select 
                 sum(tg_subs_count) AS total_telegram_subscribers,
