@@ -1,4 +1,5 @@
-from typing import List
+import datetime
+from typing import List, Optional
 
 from clients.postgres import Database
 from app.entities.doctor_subs import DoctorSubs
@@ -40,6 +41,24 @@ class ApiRepository:
             raise DoctorNotFound(doctor_id=doctor_id)
 
         return doctor
+
+    def get_all_subscribers_count(self) ->(int, Optional[datetime.datetime]) :
+        query = f""" 
+            select 
+                sum(tg_subs_count) AS total_telegram_subscribers,
+                min(tg_last_updated) AS tg_last_updated_timestamp
+            from doctors;
+        """
+
+        try:
+            result = self.db.select(query)[0]
+            total_telegram_subscribers = result[0]
+            tg_last_updated_timestamp = result[1]
+
+            return total_telegram_subscribers, tg_last_updated_timestamp
+        except Exception as e:
+            print("Ошибка получения количества подписчиков", e)
+            return 0, None
 
     def create_doctor_subscriber(self, doctor_id: int, instagram_channel_name: str, telegram_channel_name: str) -> None:
         query = f"""insert into doctors (
@@ -127,7 +146,6 @@ class ApiRepository:
             where {subs_count} > %s and {subs_count} < %s
             offset %s 
         """
-
         doctor = []
 
         try:

@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import List
 from clients.telegram import TelegramClient
 
-from app.entities.doctor_subs import SocialNetworkType, DoctorSubs
+from app.entities.doctor_subs import SocialNetworkType, DoctorSubs, subs_short, subs_text
 from app.exception.domain_error import RequiredFieldError, UnavailableTelegramChannel, DoctorNotFound
 from app.api.dto.doctor_subs import DoctorSubsDTO, DoctorSubsFilterDTO
 
@@ -26,14 +26,18 @@ class ApiService(object):
 
             inst_subs_count=doctor.inst_subs_count,
             inst_last_updated_timestamp=doctor.inst_last_updated_timestamp,
-            instagram_short=doctor.subs_short(doctor.inst_subs_count),
-            instagram_text=doctor.subs_text(doctor.inst_subs_count),
+            instagram_short=subs_short(doctor.inst_subs_count),
+            instagram_text=subs_text(doctor.inst_subs_count),
 
             tg_subs_count=doctor.tg_subs_count,
-            telegram_short=doctor.subs_short(doctor.tg_subs_count),
-            telegram_text=doctor.subs_text(doctor.tg_subs_count),
+            telegram_short=subs_short(doctor.tg_subs_count),
+            telegram_text=subs_text(doctor.tg_subs_count),
             tg_last_updated_timestamp=doctor.tg_last_updated_timestamp,
         )
+
+    def get_all_subscribers_count(self):
+        subs_count, last_updated = self.repository.get_all_subscribers_count()
+        return subs_short(subs_count), subs_text(subs_count), last_updated
 
     async def create_doctor(self, doctor_id: int, instagram_channel_name: str, telegram_channel_name: str) -> None:
         # todo пока фича только под тг работать будет
@@ -84,8 +88,8 @@ class ApiService(object):
                 DoctorSubsFilterDTO(
                     doctor_id=doctor_sub.doctor_id,
                     inst_subs_count=0,
-                    telegram_short=doctor_sub.subs_short(doctor_sub.tg_subs_count),
-                    telegram_text=doctor_sub.subs_text(doctor_sub.tg_subs_count),
+                    telegram_short=subs_short(doctor_sub.tg_subs_count),
+                    telegram_text=subs_text(doctor_sub.tg_subs_count),
                 )
             )
 
