@@ -1,6 +1,8 @@
 import asyncio
 from contextlib import asynccontextmanager
 import uvicorn
+import os
+from dotenv import load_dotenv
 from fastapi import FastAPI
 import app.api.v1.doctors as apiV1
 from app.init_logic import update_subs_service, telegram_client
@@ -54,9 +56,16 @@ async def run_periodic_updates():
 #     asyncio.run(main())
 
 if __name__ == '__main__':
+    load_dotenv()
+
+    port = 8000
+    debug = os.getenv('DEBUG') == 'True'
+    if debug:
+        port = 8001
+
     uvicorn.run(
         "main:app",
         host="0.0.0.0",
-        port=8001,
-        reload=True
+        port=port,
+        reload=debug
     )

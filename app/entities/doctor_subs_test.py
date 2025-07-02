@@ -1,5 +1,5 @@
 import pytest
-from app.entities.doctor_subs import DoctorSubs
+from app.entities.doctor_subs import DoctorSubs, subs_short, subs_text
 
 
 @pytest.mark.parametrize("count, expected", [
@@ -14,15 +14,7 @@ from app.entities.doctor_subs import DoctorSubs
     (9_999, "9999"),  # менее 10 тысяч
 ])
 def test_subs_short(count, expected):
-    doctor = DoctorSubs(
-        internal_id=1,
-        doctor_id=1,
-        inst_subs_count=100,
-        instagram_channel_name="test",
-        tg_subs_count=count,
-        telegram_channel_name="test",
-    )
-    result = doctor.subs_short(count)
+    result = subs_short(count)
     assert result == expected
 
 
@@ -49,13 +41,5 @@ def test_subs_short(count, expected):
     (115, "подписчиков"),
 ])
 def test_subs_text(count, expected):
-    doctor = DoctorSubs(
-        internal_id=1,
-        doctor_id=1,
-        inst_subs_count=100,
-        instagram_channel_name="test",
-        tg_subs_count=count,
-        telegram_channel_name="test",
-    )
-    text = doctor.subs_text(count)
+    text = subs_text(count)
     assert text == expected
