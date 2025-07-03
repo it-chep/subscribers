@@ -2,17 +2,7 @@ from __future__ import annotations
 
 import datetime
 from typing import Optional
-from enum import Enum
 from pydantic import BaseModel
-
-
-class SocialNetworkType(str, Enum):
-    """Типы социальных сетей для докторов"""
-    ALL = "all"
-    INSTAGRAM = "inst"
-    TELEGRAM = "tg"
-    VK = "vk"
-    YOUTUBE = "youtube"
 
 
 def subs_text(count) -> str:

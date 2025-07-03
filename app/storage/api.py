@@ -3,6 +3,7 @@ from typing import List, Optional
 
 from clients.postgres import Database
 from app.entities.doctor_subs import DoctorSubs, DoctorSubsByIDs
+from app.entities.messengers import Messenger, SocialNetworkType
 from app.exception.domain_error import DoctorNotFound
 
 
@@ -102,16 +103,21 @@ class ApiRepository:
         except Exception as e:
             print("Ошибка при создании доктора в таблице", e)
 
-    def get_filter_info(self) -> List[str]:
+    def get_filter_info(self) -> List[Messenger]:
         query = f"""
-            select name from social_media where enabled is true;
+            select name, slug from social_media where enabled is true;
         """
 
         medias = list()
         try:
             results = self.db.select(query)
             for result in results:
-                medias.append(result[0])
+                medias.append(
+                    Messenger(
+                        name=result[0],
+                        slug=SocialNetworkType(result[1]),
+                    )
+                )
         except Exception as e:
             print("Ошибка при получении информации о фильтрах для соц.cетей", e)
 

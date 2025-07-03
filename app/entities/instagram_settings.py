@@ -1,8 +1,6 @@
 from __future__ import annotations
 
 import datetime
-from typing import Optional
-from enum import Enum
 from pydantic import BaseModel
 
 

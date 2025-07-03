@@ -9,7 +9,7 @@ from app.exception.domain_error import RequiredFieldError, UnavailableTelegramCh
 router = APIRouter()
 
 
-@router.get('/subscribers/count')
+@router.get('/subscribers/count/')
 async def doctor_subscribers():
     """Возвращает общее количество подписичок"""
     total_telegram_subscribers, count_text, tg_last_updated_timestamp = api_service.get_all_subscribers_count()
@@ -59,16 +59,22 @@ async def doctor_subscribers(doctor_id: int):
     }
 
 
-@router.get('/filter/info')
+@router.get('/filter/info/')
 async def filter_info():
     """
     Информация для отображения фильтров. Возвращает список доступных соцсетей для фильтрации по подписчикам
     """
     messengers = api_service.get_filter_info()
+    data = list()
+    for messenger in messengers:
+        data.append({
+            "name": messenger.name,
+            "slug": str(messenger.slug.value),
+        })
     return JSONResponse(
         status_code=status.HTTP_200_OK,
         content={
-            "messengers": messengers
+            "messengers": data
         }
     )
 
