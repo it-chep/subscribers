@@ -3,7 +3,8 @@ from __future__ import annotations
 from typing import List
 from clients.telegram import TelegramClient
 
-from app.entities.doctor_subs import SocialNetworkType, DoctorSubs, subs_short, subs_text, DoctorSubsByIDs
+from app.entities.doctor_subs import DoctorSubs, subs_short, subs_text, DoctorSubsByIDs
+from app.entities.messengers import SocialNetworkType, Messenger
 from app.exception.domain_error import RequiredFieldError, UnavailableTelegramChannel, DoctorNotFound
 from app.api.dto.doctor_subs import DoctorSubsDTO, DoctorSubsFilterDTO, DoctorSubsByIDsDTO
 
@@ -66,7 +67,7 @@ class ApiService(object):
 
         return self.repository.create_doctor_subscriber(doctor_id, instagram_channel_name, telegram_channel_name)
 
-    def get_filter_info(self) -> List[str]:
+    def get_filter_info(self) -> List[Messenger]:
         return self.repository.get_filter_info()
 
     def doctors_filter(
