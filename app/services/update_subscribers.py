@@ -53,6 +53,11 @@ class UpdateSubscribersService(object):
                         channel_name=channel.instagram_channel_name
                     )
             except Exception as ex:
+                # комитим id последнего доктора
+                self.repo.commit_update_instagram_subscribers(
+                    subscribers_id=channel.internal_id,
+                    doctor_id=channel.doctor_id
+                )
                 self.notification_client.send_error_message(
                     str(ex) + f"doctorID: {channel.doctor_id}, username: {str(channel.instagram_channel_name)}",
                     "_batched_update_inst_subscribers"
@@ -89,6 +94,8 @@ class UpdateSubscribersService(object):
                         channel_name=channel.telegram_channel_name,
                     )
             except Exception as ex:
+                # комитим id последнего доктора
+                self.repo.commit_update_subscribers(subscribers_id=channel.internal_id, doctor_id=channel.doctor_id)
                 self.notification_client.send_error_message(
                     str(ex) + f"doctorID: {channel.doctor_id}, username: {str(channel.telegram_channel_name)}",
                     "_batched_update_tg_subscribers"
