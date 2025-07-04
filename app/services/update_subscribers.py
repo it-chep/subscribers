@@ -53,7 +53,7 @@ class UpdateSubscribersService(object):
                         channel_name=channel.instagram_channel_name
                     )
             except Exception as ex:
-                self.notification_client.send_error_message(str(ex.message), "_batched_update_inst_subscribers")
+                self.notification_client.send_error_message(str(ex), "_batched_update_inst_subscribers")
                 continue
 
     async def _batched_update_tg_subscribers(self):
@@ -86,7 +86,7 @@ class UpdateSubscribersService(object):
                         channel_name=channel.telegram_channel_name,
                     )
             except Exception as ex:
-                self.notification_client.send_error_message(str(ex.message), "_batched_update_tg_subscribers")
+                self.notification_client.send_error_message(str(ex), "_batched_update_tg_subscribers")
                 continue
 
     async def update_subscribers(self):
