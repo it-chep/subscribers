@@ -44,7 +44,7 @@ class UpdateSubscribersService(object):
                     doctor_id=channel.doctor_id
                 )
                 # если подписчиков 0, то считаем, что не смогли найти доктора в соцсети, при этом не коммитим данные
-                if subs_count == 0:
+                if subs_count == 0 or not subs_count:
                     self.notification_client.send_warning_not_found_doctor(
                         doctor_id=channel.doctor_id,
                         social_media="INSTAGRAM",
@@ -88,7 +88,7 @@ class UpdateSubscribersService(object):
                 # комитим id последнего доктора
                 self.repo.commit_update_subscribers(subscribers_id=channel.internal_id, doctor_id=channel.doctor_id)
                 # если подписчиков 0, то считаем, что не смогли найти доктора в соцсети, при этом не коммитим данные
-                if subs_count == 0:
+                if subs_count == 0 or not subs_count:
                     self.notification_client.send_warning_not_found_doctor(
                         doctor_id=channel.doctor_id,
                         social_media="Telegram",
