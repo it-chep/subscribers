@@ -53,9 +53,9 @@ class TelegramClient(object):
             if "+" in chat_id:
                 return await self._get_subs_from_closed_channel(chat_id)
             return await self._get_subs_from_open_channel(chat_id)
-        except FloodWait:
-            print("Нафлудили, спим 10 минут")
-            await asyncio.sleep(60 * 10)
+        except FloodWait as e:
+            print(f"Нафлудили, спим {e.value} секунд")
+            await asyncio.sleep(e.value)
             return 0
         except UsernameNotOccupied:
             return 0
