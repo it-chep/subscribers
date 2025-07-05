@@ -1,6 +1,7 @@
 import asyncio
 import time
 import logging
+from app.exception.update_error import FloodWaitError, UsernameNotOccupiedError
 
 logger = logging.getLogger(__name__)
 
@@ -94,11 +95,28 @@ class UpdateSubscribersService(object):
                         social_media="Telegram",
                         channel_name=channel.telegram_channel_name,
                     )
-                    return
+                    continue
 
                 # обновляем подписчиков доктора
                 self.repo.update_telegram_subscribers(doctor_id=channel.doctor_id, subscribers=subs_count)
 
+            except FloodWaitError as ex:
+                # комитим id последнего доктора
+                self.repo.commit_update_subscribers(subscribers_id=channel.internal_id, doctor_id=channel.doctor_id)
+                self.notification_client.send_error_message(
+                    str(ex), "_batched_update_tg_subscribers"
+                )
+                await asyncio.sleep(ex.duration_in_seconds)
+
+            except UsernameNotOccupiedError as ex:
+                # комитим id последнего доктора
+                self.repo.commit_update_subscribers(subscribers_id=channel.internal_id, doctor_id=channel.doctor_id)
+                self.notification_client.send_warning_not_found_doctor(
+                    doctor_id=channel.doctor_id,
+                    social_media="Telegram",
+                    channel_name=channel.telegram_channel_name,
+                )
+                continue
             except Exception as ex:
                 # комитим id последнего доктора
                 self.repo.commit_update_subscribers(subscribers_id=channel.internal_id, doctor_id=channel.doctor_id)
