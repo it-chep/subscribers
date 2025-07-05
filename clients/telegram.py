@@ -1,7 +1,7 @@
 import asyncio
 
 import pyrogram
-from pyrogram.errors.exceptions import FloodWait, UserAlreadyParticipant
+from pyrogram.errors.exceptions import FloodWait, UserAlreadyParticipant, UsernameNotOccupied
 
 from app.exception.domain_error import IsNotTelegramChannel
 from config.config import app_config
@@ -56,6 +56,9 @@ class TelegramClient(object):
         except FloodWait:
             print("Нафлудили, спим 10 минут")
             await asyncio.sleep(60 * 10)
+            return 0
+        except UsernameNotOccupied:
+            return 0
         except Exception as e:
             print(f"Error getting subscribers in TelegramClient.get_chat_subscribers: {e}")
             raise e

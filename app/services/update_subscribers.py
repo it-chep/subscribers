@@ -38,20 +38,23 @@ class UpdateSubscribersService(object):
             try:
                 # получаем подписчиков у доктора
                 subs_count = self.instagram_client.get_profile_subscribers(channel.instagram_channel_name)
-                # обновляем подписчиков доктора
-                self.repo.update_instagram_subscribers(doctor_id=channel.doctor_id, subscribers=subs_count)
                 # комитим id последнего доктора
                 self.repo.commit_update_instagram_subscribers(
                     subscribers_id=channel.internal_id,
                     doctor_id=channel.doctor_id
                 )
-                # если подписчиков 0, то считаем, что не смогли найти доктора в соцсети
+                # если подписчиков 0, то считаем, что не смогли найти доктора в соцсети, при этом не коммитим данные
                 if subs_count == 0:
                     self.notification_client.send_warning_not_found_doctor(
                         doctor_id=channel.doctor_id,
                         social_media="INSTAGRAM",
                         channel_name=channel.instagram_channel_name
                     )
+                    return
+
+                # обновляем подписчиков доктора после коммита в очереди и проверки на 0
+                self.repo.update_instagram_subscribers(doctor_id=channel.doctor_id, subscribers=subs_count)
+
             except Exception as ex:
                 # комитим id последнего доктора
                 self.repo.commit_update_instagram_subscribers(
@@ -82,17 +85,20 @@ class UpdateSubscribersService(object):
             try:
                 # получаем подписчиков у доктора
                 subs_count = await self.telegram_client.get_chat_subscribers(chat_id=channel.telegram_channel_name)
-                # обновляем подписчиков доктора
-                self.repo.update_telegram_subscribers(doctor_id=channel.doctor_id, subscribers=subs_count)
                 # комитим id последнего доктора
                 self.repo.commit_update_subscribers(subscribers_id=channel.internal_id, doctor_id=channel.doctor_id)
-                # если подписчиков 0, то считаем, что не смогли найти доктора в соцсети
+                # если подписчиков 0, то считаем, что не смогли найти доктора в соцсети, при этом не коммитим данные
                 if subs_count == 0:
                     self.notification_client.send_warning_not_found_doctor(
                         doctor_id=channel.doctor_id,
                         social_media="Telegram",
                         channel_name=channel.telegram_channel_name,
                     )
+                    return
+
+                # обновляем подписчиков доктора
+                self.repo.update_telegram_subscribers(doctor_id=channel.doctor_id, subscribers=subs_count)
+
             except Exception as ex:
                 # комитим id последнего доктора
                 self.repo.commit_update_subscribers(subscribers_id=channel.internal_id, doctor_id=channel.doctor_id)

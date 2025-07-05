@@ -60,6 +60,8 @@ class ApiService(object):
 
         try:
             members_count = await self.tg_client.get_chat_subscribers(telegram_channel_name)
+            if members_count == 0:
+                raise UnavailableTelegramChannel(channel_name=telegram_channel_name)
         except Exception as e:
             self.notification_client.send_warning_not_found_doctor(doctor_id, "Создание пользователя в Telegram")
             raise UnavailableTelegramChannel(channel_name=telegram_channel_name)
