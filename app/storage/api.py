@@ -162,20 +162,20 @@ class ApiRepository:
 
         return doctors
 
-    def doctors_filter(
+    # todo переделать это убожество!!!!!!!!!!!!
+    def doctors_filter_inst(
             self,
-            social_media: str,
             min_subscribers: int,
             max_subscribers: int,
             offset: int,
-    ) -> List[DoctorSubs]:
-        subs_count = f"{social_media}_subs_count"
+    ):
         query = f"""
             select 
                 doctor_id,
-                {subs_count}
+                tg_subs_count,
+                inst_subs_count
             from doctors
-            where {subs_count} > %s and {subs_count} < %s
+            where inst_subs_count > %s and inst_subs_count < %s
             offset %s 
         """
         doctor = []
@@ -190,10 +190,47 @@ class ApiRepository:
                     internal_id=0,
                     doctor_id=result[0],
                     tg_subs_count=result[1] or 0,
+                    inst_subs_count=result[2] or 0,
                 ))
 
         except Exception as e:
-            print(f"Ошибка при фильтрации по {subs_count} докторов", e)
+            print(f"Ошибка при фильтрации по ИНСТЕ докторов", e)
+
+        return doctor
+
+    # todo переделать это убожество!!!!!!!!!!!!
+    def doctors_filter_tg(
+            self,
+            min_subscribers: int,
+            max_subscribers: int,
+            offset: int,
+    ) -> List[DoctorSubs]:
+        query = f"""
+            select 
+                doctor_id,
+                tg_subs_count,
+                inst_subs_count
+            from doctors
+            where tg_subs_count > %s and tg_subs_count < %s
+            offset %s 
+        """
+        doctor = []
+
+        try:
+            results = self.db.select(
+                query,
+                (min_subscribers, max_subscribers, offset)
+            )
+            for result in results:
+                doctor.append(DoctorSubs(
+                    internal_id=0,
+                    doctor_id=result[0],
+                    tg_subs_count=result[1] or 0,
+                    inst_subs_count=result[2] or 0,
+                ))
+
+        except Exception as e:
+            print(f"Ошибка при фильтрации по ТГ докторов", e)
 
         return doctor
 

@@ -72,37 +72,43 @@ class ApiService(object):
 
     def doctors_filter(
             self,
-            social_media: str,
+            social_media: list[str],
             min_subscribers: int,
             max_subscribers: int,
             offset: int,
     ) -> List[DoctorSubsFilterDTO]:
         doctors_dto, doctor_subs = list(), list()
+        # todo переделать это убожество!!!!!!!!!!!!
+        # костыль для запроса и инсты и тг, надо сделать какой-нибудь билдер чтобы собирать запрос из переданных фильров
+        if len(social_media) == 2:
+            social_media = SocialNetworkType.ALL
 
-        if not social_media or social_media == "" or social_media == SocialNetworkType.ALL:
+        if not social_media or social_media == [] or social_media == SocialNetworkType.ALL:
             doctor_subs: list[DoctorSubs] = self.repository.doctors_all_filter(
                 min_subscribers,
                 max_subscribers,
                 offset,
             )
-        if social_media in (
-                SocialNetworkType.VK,
-                SocialNetworkType.YOUTUBE,
-                SocialNetworkType.TELEGRAM,
-                SocialNetworkType.INSTAGRAM
-        ):
-            doctor_subs: list[DoctorSubs] = self.repository.doctors_filter(
-                social_media,
-                min_subscribers,
-                max_subscribers,
-                offset,
-            )
+        if len(social_media) == 1:
+            if social_media[0] == SocialNetworkType.TELEGRAM:
+                doctor_subs: list[DoctorSubs] = self.repository.doctors_filter_tg(
+                    min_subscribers,
+                    max_subscribers,
+                    offset,
+                )
+            elif social_media[0] == SocialNetworkType.INSTAGRAM:
+                doctor_subs: list[DoctorSubs] = self.repository.doctors_filter_inst(
+                    min_subscribers,
+                    max_subscribers,
+                    offset,
+                )
 
         for doctor_sub in doctor_subs:
             doctors_dto.append(
                 DoctorSubsFilterDTO(
                     doctor_id=doctor_sub.doctor_id,
-                    inst_subs_count=0,
+                    inst_short=subs_short(doctor_sub.inst_subs_count),
+                    inst_text=subs_text(doctor_sub.inst_subs_count),
                     telegram_short=subs_short(doctor_sub.tg_subs_count),
                     telegram_text=subs_text(doctor_sub.tg_subs_count),
                 )
