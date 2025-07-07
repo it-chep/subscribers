@@ -37,7 +37,7 @@ class ApiService(object):
 
     def get_all_subscribers_count(self):
         subs_count, last_updated = self.repository.get_all_subscribers_count()
-        return subs_short(subs_count), subs_text(subs_count), last_updated
+        return subs_count, subs_text(subs_count), last_updated
 
     def get_subscribers_by_doctor_ids(self, doctor_ids: list[int]) -> list[DoctorSubsByIDsDTO]:
         result = []

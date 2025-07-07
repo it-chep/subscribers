@@ -9,7 +9,7 @@ from app.exception.domain_error import RequiredFieldError, UnavailableTelegramCh
 router = APIRouter()
 
 
-@router.get('/subscribers/count')
+@router.get('/subscribers/count/')
 async def doctor_subscribers():
     """Возвращает общее количество подписичок"""
     total_telegram_subscribers, count_text, tg_last_updated_timestamp = api_service.get_all_subscribers_count()
