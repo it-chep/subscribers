@@ -251,3 +251,20 @@ class ApiRepository:
             raise e
         except Exception as e:
             print("Ошибка при создании доктора в таблице", e)
+
+    def migrate_instagram(self, doctor_id: int, instagram_channel_name: str):
+        query = f"""
+        update doctors
+        set 
+            instagram_channel_name = %s
+        where doctor_id = %s;
+        """
+
+        try:
+            rows_count = self.db.execute_with_result(query, (instagram_channel_name, doctor_id))
+            if rows_count == 0:
+                raise DoctorNotFound(doctor_id=doctor_id)
+        except DoctorNotFound as e:
+            raise e
+        except Exception as e:
+            print("Ошибка при создании доктора в таблице", e)

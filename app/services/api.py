@@ -124,3 +124,13 @@ class ApiService(object):
         except DoctorNotFound:
             self.repository.create_doctor_subscriber(doctor_id, instagram_channel_name, telegram_channel_name)
             return False
+
+    def migrate_instagram(self, doctor_id: int, instagram_channel_name: str) -> bool:
+        """Обновление данных о докторе по его ID, если ID нет, то просто создаем доктора"""
+        try:
+            self.repository.migrate_instagram(doctor_id, instagram_channel_name)
+            return True
+        except DoctorNotFound:
+            self.repository.create_doctor_subscriber(doctor_id, instagram_channel_name, None)
+            return False
+
