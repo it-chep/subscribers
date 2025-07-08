@@ -59,7 +59,7 @@ class ApiService(object):
             raise RequiredFieldError(field_name=telegram_channel_name)
 
         try:
-            members_count = await self.tg_client.get_chat_subscribers(telegram_channel_name)
+            members_count = await self.tg_client.get_chat_subscribers(telegram_channel_name, False)
             if members_count == 0:
                 raise UnavailableTelegramChannel(channel_name=telegram_channel_name)
         except Exception as e:

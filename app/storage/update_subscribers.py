@@ -68,7 +68,7 @@ class UpdateSubscribersRepository:
                     doctor_id=row[1],
                     telegram_channel_name=row[2],
                     tg_subs_count=row[3] or 0,
-                    tg_last_updated_timestamp=row[4]
+                    tg_last_updated_timestamp=row[4],
                 ) for row in result
             ]
         except Exception as e:
@@ -82,11 +82,13 @@ class UpdateSubscribersRepository:
                        doctor_id,
                        telegram_channel_name,
                        tg_subs_count,
-                       tg_last_updated
+                       tg_last_updated,
+                       tg_has_subscribed
                 from doctors
                 where telegram_channel_name is not null
                   and telegram_channel_name != ''
                   and id > %s
+                  and tg_last_updated < now() - interval '1 day'
                 order by id
                 limit 2
                 """
@@ -99,7 +101,8 @@ class UpdateSubscribersRepository:
                     doctor_id=row[1],
                     telegram_channel_name=row[2],
                     tg_subs_count=row[3] or 0,
-                    tg_last_updated_timestamp=row[4]
+                    tg_last_updated_timestamp=row[4],
+                    tg_has_subscribed=row[5]
                 ) for row in result
             ]
         except Exception as e:
@@ -115,6 +118,16 @@ class UpdateSubscribersRepository:
                 where doctor_id = %s
                 """
         self.db.execute(query, (subscribers, doctor_id))
+        self.db.commit()
+
+    def update_tg_has_subscribed(self, doctor_id: int):
+        """Обновляет флаг подписки на Telegram"""
+        query = """
+                update doctors
+                set tg_has_subscribed = true
+                where doctor_id = %s
+                """
+        self.db.execute(query, (doctor_id, ))
         self.db.commit()
 
     def commit_update_subscribers(self, subscribers_id: int, doctor_id: int):

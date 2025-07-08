@@ -1,6 +1,8 @@
 import asyncio
 import time
 import logging
+
+from app.entities.doctor_subs import DoctorSubs
 from app.exception.update_error import FloodWaitError, UsernameNotOccupiedError
 
 logger = logging.getLogger(__name__)
@@ -68,6 +70,21 @@ class UpdateSubscribersService(object):
                 )
                 continue
 
+    async def _subscribe_to_channel(self, channel: DoctorSubs) -> DoctorSubs:
+        # если бот не подписан на ТГ канал, то подписываемся
+        if not channel.tg_has_subscribed:
+            subs_count = await self.telegram_client.subscribe_to_channel(channel.telegram_channel_name)
+            if subs_count == 0 or not subs_count:
+                self.notification_client.send_error_message(
+                    f"Ошибка при подписке на канал пользователя {channel.telegram_channel_name}",
+                    "_batched_update_tg_subscribers"
+                )
+            else:
+                self.repo.update_tg_has_subscribed(doctor_id=channel.doctor_id)
+                channel.tg_has_subscribed = True
+
+        return channel
+
     async def _batched_update_tg_subscribers(self):
         # получаем последнего обновленного доктора
         result = self.repo.get_last_updated_doctor()
@@ -84,8 +101,12 @@ class UpdateSubscribersService(object):
 
         for channel in telegram_channels:
             try:
+                # Подписываемся на канал при необходимости
+                channel: DoctorSubs = await self._subscribe_to_channel(channel)
                 # получаем подписчиков у доктора
-                subs_count = await self.telegram_client.get_chat_subscribers(chat_id=channel.telegram_channel_name)
+                subs_count = await self.telegram_client.get_chat_subscribers(
+                    chat_id=channel.telegram_channel_name, has_subscribed=channel.tg_has_subscribed
+                )
                 # комитим id последнего доктора
                 self.repo.commit_update_subscribers(subscribers_id=channel.internal_id, doctor_id=channel.doctor_id)
                 # если подписчиков 0, то считаем, что не смогли найти доктора в соцсети, при этом не коммитим данные
