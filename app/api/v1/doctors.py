@@ -1,4 +1,5 @@
 import json
+from ast import literal_eval
 
 from fastapi import APIRouter, Query
 from starlette import status
@@ -103,7 +104,22 @@ async def doctors_filter(
     - doctors_ids: айдишники докторов, которые подходят под условия фильтрации
     """
 
-    social_medias = json.loads(social_media) if social_media else []
+    if social_media is None:
+        social_medias = []
+    # todo выпилить костыль
+    if social_media is not None and len(social_media) != 0:
+        try:
+            social_medias = json.loads(social_media)
+        except json.JSONDecodeError:
+            try:
+                result = literal_eval(social_media)
+                social_medias = result if isinstance(result, list) else [result]
+            except (ValueError, SyntaxError):
+                social_medias = [
+                    s.strip()
+                    for s in social_media.strip('[]').split(',')
+                    if s.strip()
+                ]
 
     if not offset:
         offset = 0
