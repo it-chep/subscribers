@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 from fastapi import FastAPI
 import app.api.v1.doctors as apiV1
 from app.init_logic import update_subs_service, telegram_client
-
+from random import randint
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -28,7 +28,8 @@ async def run_periodic_updates():
     while True:
         try:
             await update_subs_service.update_subscribers()
-            await asyncio.sleep(60)
+            sleep_time = randint(3, 5)
+            await asyncio.sleep(60 * sleep_time)
         except asyncio.CancelledError:
             break
         except Exception as e:

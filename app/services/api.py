@@ -38,7 +38,7 @@ class ApiService(object):
 
     def get_all_subscribers_count(self):
         subs_count, last_updated = self.repository.get_all_subscribers_count()
-        return subs_short(subs_count), subs_text(subs_count), last_updated
+        return subs_count, subs_text(subs_count), last_updated
 
     def get_subscribers_by_doctor_ids(self, doctor_ids: list[int]) -> list[DoctorSubsByIDsDTO]:
         result = []
@@ -61,6 +61,8 @@ class ApiService(object):
 
         try:
             members_count = await self.tg_client.get_chat_subscribers(telegram_channel_name)
+            if members_count == 0:
+                raise UnavailableTelegramChannel(channel_name=telegram_channel_name)
         except Exception as e:
             self.notification_client.send_warning_not_found_doctor(doctor_id, "Создание пользователя в Telegram")
             raise UnavailableTelegramChannel(channel_name=telegram_channel_name)

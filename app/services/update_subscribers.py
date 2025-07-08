@@ -1,6 +1,7 @@
 import asyncio
 from datetime import datetime, timedelta
 import logging
+from app.exception.update_error import FloodWaitError, UsernameNotOccupiedError
 
 from app.entities.doctor_subs import DoctorSubs
 from app.entities.instagram_settings import InstagramSettings
@@ -115,15 +116,13 @@ class UpdateSubscribersService(object):
             try:
                 # получаем подписчиков у доктора
                 subs_count = self.instagram_client.get_profile_subscribers(channel.instagram_channel_name, token)
-                # обновляем подписчиков доктора
-                self.repo.update_instagram_subscribers(doctor_id=channel.doctor_id, subscribers=subs_count)
                 # комитим id последнего доктора
                 self.repo.commit_update_instagram_subscribers(
                     subscribers_id=channel.internal_id,
                     doctor_id=channel.doctor_id
                 )
-                # если подписчиков 0, то считаем, что не смогли найти доктора в соцсети
-                if subs_count == 0:
+                # если подписчиков 0, то считаем, что не смогли найти доктора в соцсети, при этом не коммитим данные
+                if subs_count == 0 or not subs_count:
                     self.notification_client.send_warning_not_found_doctor(
                         doctor_id=channel.doctor_id,
                         social_media="INSTAGRAM",
@@ -138,9 +137,19 @@ class UpdateSubscribersService(object):
 
                 # Обновляем лимит запросов к инстаграм
                 self.instagram_repo.increment_filled_capacity()
+                # обновляем подписчиков доктора после коммита в очереди и проверки на 0
+                self.repo.update_instagram_subscribers(doctor_id=channel.doctor_id, subscribers=subs_count)
 
             except Exception as ex:
-                self.notification_client.send_error_message(str(ex), "_batched_update_inst_subscribers")
+                # комитим id последнего доктора
+                self.repo.commit_update_instagram_subscribers(
+                    subscribers_id=channel.internal_id,
+                    doctor_id=channel.doctor_id
+                )
+                self.notification_client.send_error_message(
+                    str(ex) + f"doctorID: {channel.doctor_id}, username: {str(channel.instagram_channel_name)}",
+                    "_batched_update_inst_subscribers"
+                )
                 continue
 
     def _get_telegram_channels(self) -> list[DoctorSubs]:
@@ -165,19 +174,44 @@ class UpdateSubscribersService(object):
             try:
                 # получаем подписчиков у доктора
                 subs_count = await self.telegram_client.get_chat_subscribers(chat_id=channel.telegram_channel_name)
-                # обновляем подписчиков доктора
-                self.repo.update_telegram_subscribers(doctor_id=channel.doctor_id, subscribers=subs_count)
                 # комитим id последнего доктора
                 self.repo.commit_update_subscribers(subscribers_id=channel.internal_id, doctor_id=channel.doctor_id)
-                # если подписчиков 0, то считаем, что не смогли найти доктора в соцсети
-                if subs_count == 0:
+                # если подписчиков 0, то считаем, что не смогли найти доктора в соцсети, при этом не коммитим данные
+                if subs_count == 0 or not subs_count:
                     self.notification_client.send_warning_not_found_doctor(
                         doctor_id=channel.doctor_id,
                         social_media="Telegram",
                         channel_name=channel.telegram_channel_name,
                     )
+                    continue
+
+                # обновляем подписчиков доктора
+                self.repo.update_telegram_subscribers(doctor_id=channel.doctor_id, subscribers=subs_count)
+
+            except FloodWaitError as ex:
+                # комитим id последнего доктора
+                self.repo.commit_update_subscribers(subscribers_id=channel.internal_id, doctor_id=channel.doctor_id)
+                self.notification_client.send_error_message(
+                    str(ex), "_batched_update_tg_subscribers"
+                )
+                await asyncio.sleep(ex.duration_in_seconds)
+
+            except UsernameNotOccupiedError as ex:
+                # комитим id последнего доктора
+                self.repo.commit_update_subscribers(subscribers_id=channel.internal_id, doctor_id=channel.doctor_id)
+                self.notification_client.send_warning_not_found_doctor(
+                    doctor_id=channel.doctor_id,
+                    social_media="Telegram",
+                    channel_name=channel.telegram_channel_name,
+                )
+                continue
             except Exception as ex:
-                self.notification_client.send_error_message(str(ex), "_batched_update_tg_subscribers")
+                # комитим id последнего доктора
+                self.repo.commit_update_subscribers(subscribers_id=channel.internal_id, doctor_id=channel.doctor_id)
+                self.notification_client.send_error_message(
+                    str(ex) + f"doctorID: {channel.doctor_id}, username: {str(channel.telegram_channel_name)}",
+                    "_batched_update_tg_subscribers"
+                )
                 continue
 
     async def update_subscribers(self):
