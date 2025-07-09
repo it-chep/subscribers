@@ -3,6 +3,7 @@ from typing import List, Optional
 
 from clients.postgres import Database
 from app.entities.doctor_subs import DoctorSubs, DoctorSubsByIDs
+from app.entities.messengers import Messenger, SocialNetworkType
 from app.exception.domain_error import DoctorNotFound
 
 
@@ -71,17 +72,17 @@ class ApiRepository:
     def get_all_subscribers_count(self) -> (int, Optional[datetime.datetime]):
         query = f""" 
             select 
-                sum(tg_subs_count) AS total_telegram_subscribers,
-                min(tg_last_updated) AS tg_last_updated_timestamp
+                sum(tg_subs_count) + sum(inst_subs_count) AS total_subscribers,
+                least(min(tg_last_updated), min(inst_last_updated)) AS last_updated_timestamp
             from doctors;
         """
 
         try:
             result = self.db.select(query)[0]
-            total_telegram_subscribers = result[0]
-            tg_last_updated_timestamp = result[1]
+            total_subscribers = result[0]
+            last_updated_timestamp = result[1]
 
-            return total_telegram_subscribers, tg_last_updated_timestamp
+            return total_subscribers, last_updated_timestamp
         except Exception as e:
             print("Ошибка получения количества подписчиков", e)
             return 0, None
@@ -103,16 +104,21 @@ class ApiRepository:
         except Exception as e:
             print("Ошибка при создании доктора в таблице", e)
 
-    def get_filter_info(self) -> List[str]:
+    def get_filter_info(self) -> List[Messenger]:
         query = f"""
-            select name from social_media where enabled is true;
+            select name, slug from social_media where enabled is true;
         """
 
         medias = list()
         try:
             results = self.db.select(query)
             for result in results:
-                medias.append(result[0])
+                medias.append(
+                    Messenger(
+                        name=result[0],
+                        slug=SocialNetworkType(result[1]),
+                    )
+                )
         except Exception as e:
             print("Ошибка при получении информации о фильтрах для соц.cетей", e)
 
@@ -157,20 +163,20 @@ class ApiRepository:
 
         return doctors
 
-    def doctors_filter(
+    # todo переделать это убожество!!!!!!!!!!!!
+    def doctors_filter_inst(
             self,
-            social_media: str,
             min_subscribers: int,
             max_subscribers: int,
             offset: int,
-    ) -> List[DoctorSubs]:
-        subs_count = f"{social_media}_subs_count"
+    ):
         query = f"""
             select 
                 doctor_id,
-                {subs_count}
+                tg_subs_count,
+                inst_subs_count
             from doctors
-            where {subs_count} > %s and {subs_count} < %s
+            where inst_subs_count > %s and inst_subs_count < %s
             offset %s 
         """
         doctor = []
@@ -185,10 +191,47 @@ class ApiRepository:
                     internal_id=0,
                     doctor_id=result[0],
                     tg_subs_count=result[1] or 0,
+                    inst_subs_count=result[2] or 0,
                 ))
 
         except Exception as e:
-            print(f"Ошибка при фильтрации по {subs_count} докторов", e)
+            print(f"Ошибка при фильтрации по ИНСТЕ докторов", e)
+
+        return doctor
+
+    # todo переделать это убожество!!!!!!!!!!!!
+    def doctors_filter_tg(
+            self,
+            min_subscribers: int,
+            max_subscribers: int,
+            offset: int,
+    ) -> List[DoctorSubs]:
+        query = f"""
+            select 
+                doctor_id,
+                tg_subs_count,
+                inst_subs_count
+            from doctors
+            where tg_subs_count > %s and tg_subs_count < %s
+            offset %s 
+        """
+        doctor = []
+
+        try:
+            results = self.db.select(
+                query,
+                (min_subscribers, max_subscribers, offset)
+            )
+            for result in results:
+                doctor.append(DoctorSubs(
+                    internal_id=0,
+                    doctor_id=result[0],
+                    tg_subs_count=result[1] or 0,
+                    inst_subs_count=result[2] or 0,
+                ))
+
+        except Exception as e:
+            print(f"Ошибка при фильтрации по ТГ докторов", e)
 
         return doctor
 
@@ -203,6 +246,23 @@ class ApiRepository:
 
         try:
             rows_count = self.db.execute_with_result(query, (instagram_channel_name, telegram_channel_name, doctor_id))
+            if rows_count == 0:
+                raise DoctorNotFound(doctor_id=doctor_id)
+        except DoctorNotFound as e:
+            raise e
+        except Exception as e:
+            print("Ошибка при создании доктора в таблице", e)
+
+    def migrate_instagram(self, doctor_id: int, instagram_channel_name: str):
+        query = f"""
+        update doctors
+        set 
+            instagram_channel_name = %s
+        where doctor_id = %s;
+        """
+
+        try:
+            rows_count = self.db.execute_with_result(query, (instagram_channel_name, doctor_id))
             if rows_count == 0:
                 raise DoctorNotFound(doctor_id=doctor_id)
         except DoctorNotFound as e:

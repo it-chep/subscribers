@@ -18,9 +18,15 @@ class TelegramConfig(BaseModel):
     app_hash: str
 
 
-class InstagramConfig(BaseModel):
+class InstagrapiConfig(BaseModel):
     username: str
     password: str
+
+
+class InstagramGraphApiConfig(BaseModel):
+    app_id: int
+    app_secret: str
+    fb_business_account_id: int
 
 
 class SalebotConfig(BaseModel):
@@ -31,8 +37,9 @@ class SalebotConfig(BaseModel):
 class Config(BaseModel):
     db: DbConfig
     telegram: TelegramConfig
-    instagram: InstagramConfig
+    instagrapi: InstagrapiConfig
     salebot: SalebotConfig
+    instagramGraphApi: InstagramGraphApiConfig
 
     @classmethod
     def load(cls, path: str = "config/values.yaml") -> "Config":

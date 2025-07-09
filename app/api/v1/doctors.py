@@ -1,3 +1,6 @@
+import json
+from ast import literal_eval
+
 from fastapi import APIRouter, Query
 from starlette import status
 from starlette.responses import JSONResponse
@@ -12,63 +15,35 @@ router = APIRouter()
 @router.get('/subscribers/count/')
 async def doctor_subscribers():
     """Возвращает общее количество подписичок"""
-    total_telegram_subscribers, count_text, tg_last_updated_timestamp = api_service.get_all_subscribers_count()
+    total_subscribers, count_text, last_updated_timestamp = api_service.get_all_subscribers_count()
 
     formatted_date = None
-    if tg_last_updated_timestamp:
-        formatted_date = tg_last_updated_timestamp.strftime("%d.%m.%Y")
+    if last_updated_timestamp:
+        formatted_date = last_updated_timestamp.strftime("%d.%m.%Y")
 
     return {
-        "subscribers_count": total_telegram_subscribers,
+        "subscribers_count": total_subscribers,
         "subscribers_count_text": count_text,
         "last_updated": formatted_date,
     }
 
 
-@router.get('/subscribers/{doctor_id}/')
-async def doctor_subscribers(doctor_id: int):
-    """Возвращает количество подписчиков у доктора"""
-    doctor = api_service.get_doctor_subscribers(doctor_id)
-
-    if not doctor:
-        return JSONResponse(
-            status_code=status.HTTP_404_NOT_FOUND,
-            content={"message": "Доктор не найден"}
-        )
-
-    tg_formatted_date = None
-    if doctor.tg_last_updated_timestamp:
-        tg_formatted_date = doctor.tg_last_updated_timestamp.strftime("%d.%m.%Y")
-
-    inst_formatted_date = None
-    if doctor.inst_last_updated_timestamp:
-        inst_formatted_date = doctor.inst_last_updated_timestamp.strftime("%d.%m.%Y")
-
-    return {
-        "doctor_id": doctor.doctor_id,
-
-        "instagram": doctor.inst_subs_count,
-        "instagram_short": doctor.instagram_short,
-        "instagram_text": doctor.instagram_text,
-        "instagram_last_updated_date": inst_formatted_date,
-
-        "telegram": doctor.tg_subs_count,
-        "telegram_short": doctor.telegram_short,
-        "telegram_text": doctor.telegram_text,
-        "tg_last_updated_date": tg_formatted_date
-    }
-
-
-@router.get('/filter/info')
+@router.get('/filter/info/')
 async def filter_info():
     """
     Информация для отображения фильтров. Возвращает список доступных соцсетей для фильтрации по подписчикам
     """
     messengers = api_service.get_filter_info()
+    data = list()
+    for messenger in messengers:
+        data.append({
+            "name": messenger.name,
+            "slug": str(messenger.slug.value),
+        })
     return JSONResponse(
         status_code=status.HTTP_200_OK,
         content={
-            "messengers": messengers
+            "messengers": data
         }
     )
 
@@ -109,7 +84,7 @@ async def info_by_ids(doctor_ids: str):
 
 @router.get('/doctors/filter/')
 async def doctors_filter(
-        social_media: str = Query(None, description="Соцсеть, по которой фильтруем подписчиков - tg"),
+        social_media: str = Query(None, description='Соцсети в формате JSON массива, например: "["tg", "inst"]"'),
         min_subscribers: str = Query(None, description="Минимальное количество подписчиков - default 0"),
         max_subscribers: str = Query(None, description="Максимальное количество подписчиков - default 100"),
         offset: str = Query(None, description="Офсет поиска - default 0"),
@@ -129,6 +104,23 @@ async def doctors_filter(
     - doctors_ids: айдишники докторов, которые подходят под условия фильтрации
     """
 
+    if social_media is None:
+        social_medias = []
+    # todo выпилить костыль
+    if social_media is not None and len(social_media) != 0:
+        try:
+            social_medias = json.loads(social_media)
+        except json.JSONDecodeError:
+            try:
+                result = literal_eval(social_media)
+                social_medias = result if isinstance(result, list) else [result]
+            except (ValueError, SyntaxError):
+                social_medias = [
+                    s.strip()
+                    for s in social_media.strip('[]').split(',')
+                    if s.strip()
+                ]
+
     if not offset:
         offset = 0
 
@@ -146,7 +138,7 @@ async def doctors_filter(
         return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST, content=str(e))
 
     doctors = api_service.doctors_filter(
-        social_media,
+        social_medias,
         min_subscribers,
         max_subscribers,
         offset,
@@ -157,6 +149,8 @@ async def doctors_filter(
         doctors_list.append({
             "doctor": {
                 "doctor_id": doctor.doctor_id,
+                "inst_short": doctor.inst_short,
+                "inst_text": doctor.inst_text,
                 "telegram_short": doctor.telegram_short,
                 "telegram_text": doctor.telegram_text,
             }
@@ -171,6 +165,40 @@ async def doctors_filter(
             "doctors": doctors_list,
         }
     )
+
+
+@router.get('/subscribers/{doctor_id}/')
+async def doctor_subscribers(doctor_id: int):
+    """Возвращает количество подписчиков у доктора"""
+    doctor = api_service.get_doctor_subscribers(doctor_id)
+
+    if not doctor:
+        return JSONResponse(
+            status_code=status.HTTP_404_NOT_FOUND,
+            content={"message": "Доктор не найден"}
+        )
+
+    tg_formatted_date = None
+    if doctor.tg_last_updated_timestamp:
+        tg_formatted_date = doctor.tg_last_updated_timestamp.strftime("%d.%m.%Y")
+
+    inst_formatted_date = None
+    if doctor.inst_last_updated_timestamp:
+        inst_formatted_date = doctor.inst_last_updated_timestamp.strftime("%d.%m.%Y")
+
+    return {
+        "doctor_id": doctor.doctor_id,
+
+        "instagram": doctor.inst_subs_count,
+        "instagram_short": doctor.instagram_short,
+        "instagram_text": doctor.instagram_text,
+        "instagram_last_updated_date": inst_formatted_date,
+
+        "telegram": doctor.tg_subs_count,
+        "telegram_short": doctor.telegram_short,
+        "telegram_text": doctor.telegram_text,
+        "tg_last_updated_date": tg_formatted_date
+    }
 
 
 @router.post('/doctors/create/')
@@ -211,13 +239,27 @@ async def update_doctor(doctor_id: int, request: DoctorUpdateBody):
             status_code=status.HTTP_400_BAD_REQUEST,
             content={"message": f"Ошибка при обновлении доктора {doctor_id}"}
         )
-# todo
-# @router.post('/doctors/migrate')
-# async def migrate_doctors(request: DoctorCreateBody):
-#     """Мигрирует докторов в базу"""
-#     api_service.create_doctor(request.doctor_id, request.instagram, request.telegram)
-#
-#     return JSONResponse(
-#         status_code=status.HTTP_200_OK,,
-#         content={"message": "success"}
-#     )
+
+
+@router.post('/migrate_instagram/')
+async def migrate_instagram(request: DoctorCreateBody):
+    """Миграция инсты"""
+    try:
+        updated = api_service.migrate_instagram(request.doctor_id, request.instagram,)
+        if updated:
+            return JSONResponse(
+                status_code=status.HTTP_200_OK,
+                content={
+                    "message": f"Успешно обновил запись доктора ID: {request.doctor_id}, ИНСТ: {request.instagram}"}
+            )
+        return JSONResponse(
+            status_code=status.HTTP_201_CREATED,
+            content={
+                "message": f"Создал нового доктора ID: {request.doctor_id}, ИНСТ: {request.instagram}"}
+        )
+    except Exception as e:
+        print(f"Ошибка при обновлении доктора {request.doctor_id}: {e}")
+        return JSONResponse(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            content={"message": f"Ошибка при обновлении доктора {request.doctor_id}"}
+        )

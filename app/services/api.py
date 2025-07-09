@@ -3,7 +3,8 @@ from __future__ import annotations
 from typing import List
 from clients.telegram import TelegramClient
 
-from app.entities.doctor_subs import SocialNetworkType, DoctorSubs, subs_short, subs_text, DoctorSubsByIDs
+from app.entities.doctor_subs import DoctorSubs, subs_short, subs_text, DoctorSubsByIDs, subs_by_digits
+from app.entities.messengers import SocialNetworkType, Messenger
 from app.exception.domain_error import RequiredFieldError, UnavailableTelegramChannel, DoctorNotFound
 from app.api.dto.doctor_subs import DoctorSubsDTO, DoctorSubsFilterDTO, DoctorSubsByIDsDTO
 
@@ -37,7 +38,7 @@ class ApiService(object):
 
     def get_all_subscribers_count(self):
         subs_count, last_updated = self.repository.get_all_subscribers_count()
-        return subs_count, subs_text(subs_count), last_updated
+        return subs_by_digits(subs_count), subs_text(subs_count), last_updated
 
     def get_subscribers_by_doctor_ids(self, doctor_ids: list[int]) -> list[DoctorSubsByIDsDTO]:
         result = []
@@ -68,42 +69,48 @@ class ApiService(object):
 
         return self.repository.create_doctor_subscriber(doctor_id, instagram_channel_name, telegram_channel_name)
 
-    def get_filter_info(self) -> List[str]:
+    def get_filter_info(self) -> List[Messenger]:
         return self.repository.get_filter_info()
 
     def doctors_filter(
             self,
-            social_media: str,
+            social_media: list[str],
             min_subscribers: int,
             max_subscribers: int,
             offset: int,
     ) -> List[DoctorSubsFilterDTO]:
         doctors_dto, doctor_subs = list(), list()
+        # todo переделать это убожество!!!!!!!!!!!!
+        # костыль для запроса и инсты и тг, надо сделать какой-нибудь билдер чтобы собирать запрос из переданных фильров
+        if len(social_media) == 2:
+            social_media = SocialNetworkType.ALL
 
-        if not social_media or social_media == "" or social_media == SocialNetworkType.ALL:
+        if not social_media or social_media == [] or social_media == SocialNetworkType.ALL:
             doctor_subs: list[DoctorSubs] = self.repository.doctors_all_filter(
                 min_subscribers,
                 max_subscribers,
                 offset,
             )
-        if social_media in (
-                SocialNetworkType.VK,
-                SocialNetworkType.YOUTUBE,
-                SocialNetworkType.TELEGRAM,
-                SocialNetworkType.INSTAGRAM
-        ):
-            doctor_subs: list[DoctorSubs] = self.repository.doctors_filter(
-                social_media,
-                min_subscribers,
-                max_subscribers,
-                offset,
-            )
+        if len(social_media) == 1:
+            if social_media[0] == SocialNetworkType.TELEGRAM:
+                doctor_subs: list[DoctorSubs] = self.repository.doctors_filter_tg(
+                    min_subscribers,
+                    max_subscribers,
+                    offset,
+                )
+            elif social_media[0] == SocialNetworkType.INSTAGRAM:
+                doctor_subs: list[DoctorSubs] = self.repository.doctors_filter_inst(
+                    min_subscribers,
+                    max_subscribers,
+                    offset,
+                )
 
         for doctor_sub in doctor_subs:
             doctors_dto.append(
                 DoctorSubsFilterDTO(
                     doctor_id=doctor_sub.doctor_id,
-                    inst_subs_count=0,
+                    inst_short=subs_short(doctor_sub.inst_subs_count),
+                    inst_text=subs_text(doctor_sub.inst_subs_count),
                     telegram_short=subs_short(doctor_sub.tg_subs_count),
                     telegram_text=subs_text(doctor_sub.tg_subs_count),
                 )
@@ -119,3 +126,13 @@ class ApiService(object):
         except DoctorNotFound:
             self.repository.create_doctor_subscriber(doctor_id, instagram_channel_name, telegram_channel_name)
             return False
+
+    def migrate_instagram(self, doctor_id: int, instagram_channel_name: str) -> bool:
+        """Обновление данных о докторе по его ID, если ID нет, то просто создаем доктора"""
+        try:
+            self.repository.migrate_instagram(doctor_id, instagram_channel_name)
+            return True
+        except DoctorNotFound:
+            self.repository.create_doctor_subscriber(doctor_id, instagram_channel_name, None)
+            return False
+
