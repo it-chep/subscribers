@@ -157,8 +157,8 @@ class UpdateSubscribersService(object):
     async def _subscribe_to_channel(self, channel: DoctorSubs) -> DoctorSubs:
         # если бот не подписан на ТГ канал, то подписываемся
         if not channel.tg_has_subscribed:
-            subs_count = await self.telegram_client.subscribe_to_channel(channel.telegram_channel_name)
-            if subs_count == 0 or not subs_count:
+            has_subscribed = await self.telegram_client.subscribe_to_channel(channel.telegram_channel_name)
+            if not has_subscribed:
                 self.notification_client.send_error_message(
                     f"Ошибка при подписке на канал пользователя {channel.telegram_channel_name}",
                     "_batched_update_tg_subscribers"

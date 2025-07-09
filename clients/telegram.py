@@ -32,10 +32,16 @@ class TelegramClient(object):
     #
     #     return channel.members_count or 0
 
-    async def subscribe_to_channel(self, chat_id):
+    async def subscribe_to_channel(self, chat_id) -> bool:
         """Подписаться на канал"""
-        channel = await self.client.join_chat(chat_id)
-        return channel.members_count or 0
+        if not self._is_connected:
+            await self.start()
+
+        try:
+            channel = await self.client.join_chat(chat_id)
+            return True
+        except Exception as ex:
+            return False
 
     async def _get_subs_from_open_channel(self, chat_id):
         """Получение подписчиков из открытого канала"""
