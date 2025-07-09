@@ -23,6 +23,9 @@ def subs_text(count) -> str:
 
     return text
 
+def subs_by_digits(count: int) -> str:
+    return "{:,}".format(count).replace(",", " ")
+
 
 def subs_short(count) -> str:
     """

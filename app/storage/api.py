@@ -72,17 +72,17 @@ class ApiRepository:
     def get_all_subscribers_count(self) -> (int, Optional[datetime.datetime]):
         query = f""" 
             select 
-                sum(tg_subs_count) AS total_telegram_subscribers,
-                min(tg_last_updated) AS tg_last_updated_timestamp
+                sum(tg_subs_count) + sum(inst_subs_count) AS total_subscribers,
+                least(min(tg_last_updated), min(inst_last_updated)) AS last_updated_timestamp
             from doctors;
         """
 
         try:
             result = self.db.select(query)[0]
-            total_telegram_subscribers = result[0]
-            tg_last_updated_timestamp = result[1]
+            total_subscribers = result[0]
+            last_updated_timestamp = result[1]
 
-            return total_telegram_subscribers, tg_last_updated_timestamp
+            return total_subscribers, last_updated_timestamp
         except Exception as e:
             print("Ошибка получения количества подписчиков", e)
             return 0, None

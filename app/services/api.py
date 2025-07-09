@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import List
 from clients.telegram import TelegramClient
 
-from app.entities.doctor_subs import DoctorSubs, subs_short, subs_text, DoctorSubsByIDs
+from app.entities.doctor_subs import DoctorSubs, subs_short, subs_text, DoctorSubsByIDs, subs_by_digits
 from app.entities.messengers import SocialNetworkType, Messenger
 from app.exception.domain_error import RequiredFieldError, UnavailableTelegramChannel, DoctorNotFound
 from app.api.dto.doctor_subs import DoctorSubsDTO, DoctorSubsFilterDTO, DoctorSubsByIDsDTO
@@ -38,7 +38,7 @@ class ApiService(object):
 
     def get_all_subscribers_count(self):
         subs_count, last_updated = self.repository.get_all_subscribers_count()
-        return subs_count, subs_text(subs_count), last_updated
+        return subs_by_digits(subs_count), subs_text(subs_count), last_updated
 
     def get_subscribers_by_doctor_ids(self, doctor_ids: list[int]) -> list[DoctorSubsByIDsDTO]:
         result = []
