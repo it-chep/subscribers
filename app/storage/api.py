@@ -91,9 +91,10 @@ class ApiRepository:
         query = f"""insert into doctors (
                 doctor_id, 
                 instagram_channel_name,
-                telegram_channel_name
+                telegram_channel_name,
+                tg_has_subscribed
         ) 
-        values (%s, %s, %s)
+        values (%s, %s, %s, false)
         on conflict (doctor_id) do nothing
         returning id;
         """

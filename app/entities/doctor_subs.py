@@ -63,6 +63,8 @@ class DoctorSubs(BaseModel):
     tg_subs_count: int = 0
     # название аккаунта
     telegram_channel_name: str = ""
+    # подписан ли бот на этот тг канал
+    tg_has_subscribed: Optional[bool] = False
 
 class DoctorSubsByIDs(BaseModel):
     doctor_id: int

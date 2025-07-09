@@ -23,15 +23,25 @@ class TelegramClient(object):
             await self.client.start()
             self._is_connected = True
 
-    async def _get_subs_from_closed_channel(self, chat_id):
-        """Получение подписчиков из закрытого канала"""
-        # todo мб флаг в базке хранить
+    # async def _get_subs_from_closed_channel(self, chat_id):
+    #     """Получение подписчиков из закрытого канала"""
+    #     try:
+    #         channel = await self.client.join_chat(chat_id)
+    #     except UserAlreadyParticipant:
+    #         return await self._get_subs_from_open_channel(chat_id)
+    #
+    #     return channel.members_count or 0
+
+    async def subscribe_to_channel(self, chat_id) -> bool:
+        """Подписаться на канал"""
+        if not self._is_connected:
+            await self.start()
+
         try:
             channel = await self.client.join_chat(chat_id)
-        except UserAlreadyParticipant:
-            return await self._get_subs_from_open_channel(chat_id)
-
-        return channel.members_count or 0
+            return True
+        except Exception as ex:
+            return False
 
     async def _get_subs_from_open_channel(self, chat_id):
         """Получение подписчиков из открытого канала"""
@@ -41,15 +51,15 @@ class TelegramClient(object):
 
         return channel.members_count
 
-    async def get_chat_subscribers(self, chat_id: str) -> int:
+    async def get_chat_subscribers(self, chat_id: str, has_subscribed: bool) -> int:
         """Получение количества подписчиков канала"""
 
         if not self._is_connected:
             await self.start()
 
         try:
-            if "+" in chat_id:
-                return await self._get_subs_from_closed_channel(chat_id)
+            if not has_subscribed:
+                await self.subscribe_to_channel(chat_id)
             return await self._get_subs_from_open_channel(chat_id)
         except FloodWait as e:
             raise FloodWaitError(duration_in_seconds=e.value)
