@@ -43,7 +43,7 @@ class UpdateSubscribersService(object):
         if current_time >= reset_time:
             self.instagram_repo.clear_filled_capacity()
 
-    def _get_instagram_token_info(self) -> str:
+    def _get_instagram_token_info(self) -> InstagramSettings:
         """Получение информации о токене инстаграм"""
         settings: InstagramSettings = self.instagram_repo.get_instagram_settings()
 
@@ -56,11 +56,12 @@ class UpdateSubscribersService(object):
             self.notification_client.send_error_message(
                 "Достигнут лимит запросов к инсте", "_get_instagram_token_info"
             )
-            return ""
+            settings.long_access_token = ""
+            return settings
 
         # если у нас есть активный токен, возвращаем его
         if settings.is_active:
-            return settings.long_access_token
+            return settings
 
         # получаем новый токен
         long_lived_token = self.instagram_client.authenticate(settings.short_access_token)
@@ -71,11 +72,13 @@ class UpdateSubscribersService(object):
                 "Не удалось получить токен INSTAGRAM или он не валиден. Надо срочно что-то сделать",
                 "_get_instagram_token_info"
             )
-            return ""
+            settings.long_access_token = ""
+            return settings
 
         # сохраняем новый токен
         self.instagram_repo.update_token_info(long_lived_token)
-        return long_lived_token
+        settings.long_access_token = long_lived_token
+        return settings
 
     def _get_instagram_channels(self) -> list[DoctorSubs]:
         # получаем последнего обновленного доктора
@@ -108,8 +111,8 @@ class UpdateSubscribersService(object):
 
     async def _batched_update_inst_subscribers(self):
         # получение информации о токене инстаграмма, если его нет, то надо делать датафикс и обновлять руками
-        token = self._get_instagram_token_info()
-        if token == "":
+        settings = self._get_instagram_token_info()
+        if settings.long_access_token == "":
             return
 
         instagram_channels = self._get_instagram_channels()
@@ -117,19 +120,14 @@ class UpdateSubscribersService(object):
         for channel in instagram_channels:
             try:
                 # получаем подписчиков у доктора
-                subs_count = self.instagram_client.get_profile_subscribers(channel.instagram_channel_name, token)
+                subs_count = self.instagram_client.get_profile_subscribers(
+                    channel.instagram_channel_name, settings.long_access_token
+                )
                 # комитим id последнего доктора
                 self.repo.commit_update_instagram_subscribers(
                     subscribers_id=channel.internal_id,
                     doctor_id=channel.doctor_id
                 )
-                # если подписчиков 0, то считаем, что не смогли найти доктора в соцсети, при этом не коммитим данные
-                if subs_count == 0 or not subs_count:
-                    self.notification_client.send_warning_not_found_doctor(
-                        doctor_id=channel.doctor_id,
-                        social_media="INSTAGRAM",
-                        channel_name=channel.instagram_channel_name
-                    )
                 if subs_count == -1:
                     self.notification_client.send_error_message(
                         "ПРОТУХ ТОКЕН ДЛЯ ИНСТАГРАМ, надо срочно его починить или там другая ошибка",
@@ -138,7 +136,17 @@ class UpdateSubscribersService(object):
                     self.instagram_repo.turn_of_token()
 
                 # Обновляем лимит запросов к инстаграм
-                self.instagram_repo.increment_filled_capacity()
+                self.instagram_repo.increment_filled_capacity(settings.filled_capacity)
+
+                # если подписчиков 0, то считаем, что не смогли найти доктора в соцсети, при этом не коммитим данные
+                if subs_count == 0 or not subs_count:
+                    self.notification_client.send_warning_not_found_doctor(
+                        doctor_id=channel.doctor_id,
+                        social_media="INSTAGRAM",
+                        channel_name=channel.instagram_channel_name
+                    )
+                    continue
+
                 # обновляем подписчиков доктора после коммита в очереди и проверки на 0
                 self.repo.update_instagram_subscribers(doctor_id=channel.doctor_id, subscribers=subs_count)
 

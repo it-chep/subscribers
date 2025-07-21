@@ -55,17 +55,8 @@ class ApiService(object):
         return result
 
     async def create_doctor(self, doctor_id: int, instagram_channel_name: str, telegram_channel_name: str) -> None:
-        # todo пока фича только под тг работать будет
         if not telegram_channel_name:
             raise RequiredFieldError(field_name=telegram_channel_name)
-
-        try:
-            members_count = await self.tg_client.get_chat_subscribers(telegram_channel_name, False)
-            if members_count == 0:
-                raise UnavailableTelegramChannel(channel_name=telegram_channel_name)
-        except Exception as e:
-            self.notification_client.send_warning_not_found_doctor(doctor_id, "Создание пользователя в Telegram")
-            raise UnavailableTelegramChannel(channel_name=telegram_channel_name)
 
         return self.repository.create_doctor_subscriber(doctor_id, instagram_channel_name, telegram_channel_name)
 

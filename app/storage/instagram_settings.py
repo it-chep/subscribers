@@ -59,16 +59,17 @@ class InstagramSettingsRepository:
         self.db.execute(query, ())
         self.db.commit()
 
-    def increment_filled_capacity(self):
+    def increment_filled_capacity(self, capacity: int) -> None:
         """Инкрементит выполненные к инстаграм запрос"""
         query = """
                 update instagram_api_settings 
                 set 
-                    filled_capacity = filled_capacity + 1 
+                    filled_capacity = %s
                 where id = 1;
                 """
 
-        self.db.execute(query, ())
+        capacity += 1
+        self.db.execute(query, (capacity,))
         self.db.commit()
 
     def clear_filled_capacity(self):
