@@ -87,7 +87,7 @@ async def doctors_filter(
         social_media: str = Query(None, description='Соцсети в формате JSON массива, например: "["tg", "inst"]"'),
         min_subscribers: str = Query(None, description="Минимальное количество подписчиков - default 0"),
         max_subscribers: str = Query(None, description="Максимальное количество подписчиков - default 100"),
-        offset: str = Query(None, description="Офсет поиска - default 0"),
+        offset: str = Query(None, description="current_page поиска - default 0"),
         limit: str = Query(None, description="Лимит поиска для страницы - default 30"),
 ):
     """
@@ -97,15 +97,15 @@ async def doctors_filter(
     - social_media: социальная сеть по которой необходимо фильтровать
     - min_subscribers: минимальное число подписчиков (включительно)
     - max_subscribers: максимальное число подписчиков (включительно)
-    - offset: офсет поиска
+    - offset: current_page - текущая страница поиска
     - limit: лимит поиска
 
     :return
     - doctors_ids: айдишники докторов, которые подходят под условия фильтрации
     """
+    current_page = offset
 
-    if social_media is None:
-        social_medias = []
+    social_medias = []
     # todo выпилить костыль
     if social_media is not None and len(social_media) != 0:
         try:
@@ -121,8 +121,12 @@ async def doctors_filter(
                     if s.strip()
                 ]
 
-    if not offset:
-        offset = 0
+    # Дефолтные значения
+    if not current_page:
+        current_page = 0
+
+    if not limit or int(min_subscribers) <= 0:
+        limit = 30
 
     if not min_subscribers or int(min_subscribers) < 0:
         min_subscribers = 0
@@ -133,15 +137,16 @@ async def doctors_filter(
     try:
         min_subscribers = int(min_subscribers)
         max_subscribers = int(max_subscribers)
-        offset = int(offset)
+        current_page = int(current_page)
     except Exception as e:
         return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST, content=str(e))
 
-    doctors = api_service.doctors_filter(
+    doctors, filtered_doctors_count, subscribers_count = api_service.doctors_filter(
         social_medias,
         min_subscribers,
         max_subscribers,
-        offset,
+        current_page,
+        limit,
     )
 
     doctors_list = []
@@ -159,9 +164,8 @@ async def doctors_filter(
     return JSONResponse(
         status_code=status.HTTP_200_OK,
         content={
-            "min_subscribers": min_subscribers,
-            "max_subscribers": max_subscribers,
-            "offset": offset,
+            "filtered_doctors_count": filtered_doctors_count,
+            "filtered_doctors_subscribers_count": subscribers_count,
             "doctors": doctors_list,
         }
     )
@@ -206,11 +210,9 @@ async def create_doctor(request: DoctorCreateBody):
     """Создает нового доктора в базе"""
     try:
         await api_service.create_doctor(request.doctor_id, request.instagram, request.telegram)
-    except RequiredFieldError as e:
-        return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST, content={"message": str(e)})
-    except UnavailableTelegramChannel as e:
-        return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST, content={"message": str(e)})
-
+    except Exception as e:
+        print('Ошибка при создании доктора create_doctor', e)
+        return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST, content=str(e))
     return JSONResponse(
         status_code=status.HTTP_200_OK,
         content={"message": f"Успешно создал запись DOC: {request.doctor_id}, канал:{request.telegram}"}
@@ -245,7 +247,7 @@ async def update_doctor(doctor_id: int, request: DoctorUpdateBody):
 async def migrate_instagram(request: DoctorCreateBody):
     """Миграция инсты"""
     try:
-        updated = api_service.migrate_instagram(request.doctor_id, request.instagram,)
+        updated = api_service.migrate_instagram(request.doctor_id, request.instagram, )
         if updated:
             return JSONResponse(
                 status_code=status.HTTP_200_OK,
