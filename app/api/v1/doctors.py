@@ -7,7 +7,7 @@ from starlette.responses import JSONResponse
 
 from app.entities.sorted import SortedType
 from app.init_logic import api_service
-from app.api.v1.serializers import DoctorCreateBody, DoctorUpdateBody
+from app.api.v1.serializers import DoctorCreateBody, DoctorUpdateBody, DoctorsFilterBody
 
 router = APIRouter()
 
@@ -78,6 +78,57 @@ async def info_by_ids(doctor_ids: str):
         status_code=status.HTTP_200_OK,
         content={
             "data": res_map
+        }
+    )
+
+
+# Используем post чтобы не превысить лимит по get параметрам
+@router.post('/doctors/filter/')
+async def doctors_filter_with_ids(request: DoctorsFilterBody):
+    """
+    Фильтрация по фильтрам и id докторов, чтобы не урезать выдачу
+    """
+    # todo проверить работу request.social_media
+    limit = 30 or request.limit
+    try:
+        sort_enum = SortedType(request.sort.lower())
+    except ValueError:
+        sort_enum = SortedType.DESC
+
+    try:
+        min_subscribers = int(request.min_subscribers)
+        max_subscribers = int(request.max_subscribers)
+    except Exception as e:
+        return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST, content=str(e))
+
+    doctors, filtered_doctors_count, subscribers_count = api_service.doctors_filter_with_doctors_ids(
+        request.social_media,
+        sort_enum,
+        min_subscribers,
+        max_subscribers,
+        request.current_page or 0,
+        limit,
+        request.doctor_ids,
+    )
+
+    doctors_list = []
+    for doctor in doctors:
+        doctors_list.append({
+            "doctor": {
+                "doctor_id": doctor.doctor_id,
+                "inst_short": doctor.inst_short,
+                "inst_text": doctor.inst_text,
+                "telegram_short": doctor.telegram_short,
+                "telegram_text": doctor.telegram_text,
+            }
+        })
+
+    return JSONResponse(
+        status_code=status.HTTP_200_OK,
+        content={
+            "filtered_doctors_count": filtered_doctors_count,
+            "filtered_doctors_subscribers_count": subscribers_count,
+            "doctors": doctors_list,
         }
     )
 

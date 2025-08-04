@@ -65,6 +65,38 @@ class ApiService(object):
     def get_filter_info(self) -> List[Messenger]:
         return self.repository.get_filter_info()
 
+    def doctors_filter_with_doctors_ids(
+            self,
+            social_media: list[str],
+            sort_enum: SortedType,
+            min_subscribers: int,
+            max_subscribers: int,
+            current_page: int,
+            limit: int,
+            doctor_ids: list[int]
+    ):
+        doctors_dto, doctor_subs = list(), list()
+        doctor_subs: list[DoctorSubs] = self.repository.doctors_filter_with_doctors_ids(
+            social_media, sort_enum, min_subscribers, max_subscribers, current_page, limit, doctor_ids
+        )
+
+        doctors_count, subs_count = self.repository.filtered_doctors_count_with_doctors_ids(
+            social_media, min_subscribers, max_subscribers, doctor_ids
+        )
+
+        for doctor_sub in doctor_subs:
+            doctors_dto.append(
+                DoctorSubsFilterDTO(
+                    doctor_id=doctor_sub.doctor_id,
+                    inst_short=subs_short(doctor_sub.inst_subs_count),
+                    inst_text=subs_text(doctor_sub.inst_subs_count),
+                    telegram_short=subs_short(doctor_sub.tg_subs_count),
+                    telegram_text=subs_text(doctor_sub.tg_subs_count),
+                )
+            )
+
+        return doctors_dto, doctors_count, subs_count
+
     def doctors_filter(
             self,
             social_media: list[str],
@@ -75,7 +107,8 @@ class ApiService(object):
             limit: int,
     ):
         doctors_dto, doctor_subs = list(), list()
-        doctor_subs: list[DoctorSubs] = self.repository.doctors_filter(social_media, sort_enum, min_subscribers, max_subscribers, current_page, limit)
+        doctor_subs: list[DoctorSubs] = self.repository.doctors_filter(social_media, sort_enum, min_subscribers,
+                                                                       max_subscribers, current_page, limit)
         doctors_count, subs_count = self.repository.filtered_doctors_count(
             social_media, min_subscribers, max_subscribers
         )

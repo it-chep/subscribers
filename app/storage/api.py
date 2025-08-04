@@ -125,6 +125,56 @@ class ApiRepository:
 
         return medias
 
+    def filtered_doctors_count_with_doctors_ids(
+            self,
+            social_networks: list[SocialNetworkType],
+            min_subscribers: int,
+            max_subscribers: int,
+            doctors_ids: list[int],
+    ):
+        """
+        Функция считает сколько врачей попадает под выборку для подсчета страниц,
+        какой охват имеют отфильтрованные врачи
+        """
+        base_query = f""" 
+        select 
+            count(*) as doctors_count, 
+            sum(tg_subs_count) + sum(inst_subs_count) AS total_subscribers
+        from doctors
+        where doctor_id = any(%s::bigint[])
+        """
+
+        params = ()
+        query = ""
+
+        if not social_networks or len(social_networks) or len(social_networks) == 2:
+            query = base_query + f"""
+                 and ((inst_subs_count > %s and inst_subs_count < %s) or (tg_subs_count > %s and tg_subs_count < %s))
+            """
+            params = (doctors_ids, min_subscribers, max_subscribers, min_subscribers, max_subscribers)
+
+        if len(social_networks) == 1 and social_networks[0] == SocialNetworkType.INSTAGRAM:
+            query = base_query + f"""
+                and inst_subs_count > %s and inst_subs_count < %s
+            """
+            params = (doctors_ids, min_subscribers, max_subscribers)
+
+        if len(social_networks) == 1 and social_networks[0] == SocialNetworkType.TELEGRAM:
+            query = base_query + f"""
+                and tg_subs_count > %s and tg_subs_count < %s
+            """
+            params = (doctors_ids, min_subscribers, max_subscribers)
+
+        try:
+            result = self.db.select(query, params)[0]
+            doctors_count = int(result[0])
+            subscribers_count = int(result[1])
+        except Exception as e:
+            print("Ошибка при подсчете докторов для фильтрации", e)
+            return 0, 0
+
+        return doctors_count, subscribers_count
+
     def filtered_doctors_count(
             self,
             social_networks: list[SocialNetworkType],
@@ -145,7 +195,7 @@ class ApiRepository:
         params = ()
         query = ""
 
-        if not social_networks or len(social_networks) or len(social_networks) == 2 :
+        if not social_networks or len(social_networks) or len(social_networks) == 2:
             query = base_query + f"""
                  where (inst_subs_count > %s and inst_subs_count < %s) or (tg_subs_count > %s and tg_subs_count < %s)
             """
@@ -173,6 +223,80 @@ class ApiRepository:
 
         return doctors_count, subscribers_count
 
+    def doctors_filter_with_doctors_ids(
+            self,
+            social_networks: list[SocialNetworkType],
+            sort_enum: SortedType,
+            min_subscribers: int,
+            max_subscribers: int,
+            current_page: int,
+            limit: int,
+            doctors_ids: list[int],
+    ):
+        if current_page <= 0:
+            current_page = 1
+
+        offset = (current_page - 1) * limit
+        doctors = []
+        params = doctors_ids
+        query = ""
+
+        base_query = f"""
+                   select 
+                       doctor_id,
+                       tg_subs_count,
+                       inst_subs_count,
+                       coalesce(inst_subs_count, 0) + coalesce(tg_subs_count, 0) AS total_subscribers
+                   from doctors
+                   where doctor_id = any(%s::bigint[])
+               """
+
+        if not social_networks or len(social_networks) or len(social_networks) == 2:
+            query = base_query + f"""
+                         and ((inst_subs_count > %s and inst_subs_count < %s) or (tg_subs_count > %s and tg_subs_count < %s))
+                         order by total_subscribers {sort_enum}
+                         offset %s 
+                         limit %s
+                    """
+            params = (doctors_ids, min_subscribers, max_subscribers, min_subscribers, max_subscribers, offset, limit)
+
+        if len(social_networks) == 1 and social_networks[0] == SocialNetworkType.INSTAGRAM:
+            query = base_query + f"""
+                        and inst_subs_count > %s and inst_subs_count < %s
+                        order by total_subscribers {sort_enum}
+                        offset %s 
+                        limit %s
+                    """
+            params = (doctors_ids, min_subscribers, max_subscribers, offset, limit)
+
+        if len(social_networks) == 1 and social_networks[0] == SocialNetworkType.TELEGRAM:
+            query = base_query + f"""
+                        and tg_subs_count > %s and tg_subs_count < %s
+                        order by total_subscribers {sort_enum}
+                        offset %s 
+                        limit %s
+                    """
+            params = (doctors_ids, min_subscribers, max_subscribers, offset, limit)
+
+        try:
+            results = self.db.select(
+                query, params
+            )
+            for result in results:
+                doctors.append(
+                    DoctorSubs(
+                        internal_id=0,
+                        doctor_id=result[0],
+                        tg_subs_count=result[1] or 0,
+                        inst_subs_count=result[2] or 0,
+                    )
+                )
+
+        except Exception as e:
+            print("Ошибка при фильтрации каналов докторов", e)
+
+        return doctors
+
     def doctors_filter(
             self,
             social_networks: list[SocialNetworkType],
@@ -199,32 +323,29 @@ class ApiRepository:
             from doctors
         """
 
-        if not social_networks or len(social_networks) or len(social_networks) == 2 :
+        if not social_networks or len(social_networks) or len(social_networks) == 2:
             query = base_query + f"""
                          where (inst_subs_count > %s and inst_subs_count < %s) or (tg_subs_count > %s and tg_subs_count < %s)
                          order by total_subscribers {sort_enum}
                          offset %s 
-                         limit %s
                     """
-            params = (min_subscribers, max_subscribers, min_subscribers, max_subscribers, offset, limit)
+            params = (min_subscribers, max_subscribers, min_subscribers, max_subscribers, offset)
 
         if len(social_networks) == 1 and social_networks[0] == SocialNetworkType.INSTAGRAM:
             query = base_query + f"""
                         where inst_subs_count > %s and inst_subs_count < %s
                         order by total_subscribers {sort_enum}
                         offset %s 
-                        limit %s
                     """
-            params = (min_subscribers, max_subscribers, offset, limit)
+            params = (min_subscribers, max_subscribers, offset)
 
         if len(social_networks) == 1 and social_networks[0] == SocialNetworkType.TELEGRAM:
             query = base_query + f"""
                         where tg_subs_count > %s and tg_subs_count < %s
                         order by total_subscribers {sort_enum}
                         offset %s 
-                        limit %s
                     """
-            params = (min_subscribers, max_subscribers, offset, limit)
+            params = (min_subscribers, max_subscribers, offset)
 
         try:
             results = self.db.select(
