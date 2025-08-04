@@ -145,7 +145,7 @@ class ApiRepository:
         params = ()
         query = ""
 
-        if len(social_networks) == 2:
+        if not social_networks or len(social_networks) or len(social_networks) == 2 :
             query = base_query + f"""
                  where (inst_subs_count > %s and inst_subs_count < %s) or (tg_subs_count > %s and tg_subs_count < %s)
             """
@@ -195,11 +195,11 @@ class ApiRepository:
                 doctor_id,
                 tg_subs_count,
                 inst_subs_count,
-                (inst_subs_count + tg_subs_count) AS total_subscribers
+                coalesce(inst_subs_count, 0) + coalesce(tg_subs_count, 0) AS total_subscribers
             from doctors
         """
 
-        if len(social_networks) == 2:
+        if not social_networks or len(social_networks) or len(social_networks) == 2 :
             query = base_query + f"""
                          where (inst_subs_count > %s and inst_subs_count < %s) or (tg_subs_count > %s and tg_subs_count < %s)
                          order by total_subscribers {sort_enum}
