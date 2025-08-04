@@ -5,9 +5,9 @@ from fastapi import APIRouter, Query
 from starlette import status
 from starlette.responses import JSONResponse
 
+from app.entities.sorted import SortedType
 from app.init_logic import api_service
 from app.api.v1.serializers import DoctorCreateBody, DoctorUpdateBody
-from app.exception.domain_error import RequiredFieldError, UnavailableTelegramChannel, DoctorNotFound
 
 router = APIRouter()
 
@@ -89,6 +89,7 @@ async def doctors_filter(
         max_subscribers: str = Query(None, description="Максимальное количество подписчиков - default 100"),
         offset: str = Query(None, description="current_page поиска - default 0"),
         limit: str = Query(None, description="Лимит поиска для страницы - default 30"),
+        sort: str = Query("desc", description="Сортировка по количеству подписчиков default desc"),
 ):
     """
     Возвращает докторов отфильтрованных по переданному значению количества подписчиков
@@ -125,6 +126,11 @@ async def doctors_filter(
     if not current_page:
         current_page = 0
 
+    try:
+        sort_enum = SortedType(sort.lower())
+    except ValueError:
+        sort_enum = SortedType.DESC
+
     if not limit or int(min_subscribers) <= 0:
         limit = 30
 
@@ -143,6 +149,7 @@ async def doctors_filter(
 
     doctors, filtered_doctors_count, subscribers_count = api_service.doctors_filter(
         social_medias,
+        sort_enum,
         min_subscribers,
         max_subscribers,
         current_page,

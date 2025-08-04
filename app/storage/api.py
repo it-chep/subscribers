@@ -1,6 +1,7 @@
 import datetime
 from typing import List, Optional
 
+from app.entities.sorted import SortedType
 from clients.postgres import Database
 from app.entities.doctor_subs import DoctorSubs, DoctorSubsByIDs
 from app.entities.messengers import Messenger, SocialNetworkType
@@ -175,6 +176,7 @@ class ApiRepository:
     def doctors_filter(
             self,
             social_networks: list[SocialNetworkType],
+            sort_enum: SortedType,
             min_subscribers: int,
             max_subscribers: int,
             current_page: int,
@@ -189,16 +191,18 @@ class ApiRepository:
         query = ""
 
         base_query = f"""
-                    select 
-                        doctor_id,
-                        tg_subs_count,
-                        inst_subs_count
-                    from doctors
-                """
+            select 
+                doctor_id,
+                tg_subs_count,
+                inst_subs_count,
+                (inst_subs_count + tg_subs_count) AS total_subscribers
+            from doctors
+        """
 
         if len(social_networks) == 2:
             query = base_query + f"""
                          where (inst_subs_count > %s and inst_subs_count < %s) or (tg_subs_count > %s and tg_subs_count < %s)
+                         order by total_subscribers {sort_enum}
                          offset %s 
                          limit %s
                     """
@@ -207,6 +211,7 @@ class ApiRepository:
         if len(social_networks) == 1 and social_networks[0] == SocialNetworkType.INSTAGRAM:
             query = base_query + f"""
                         where inst_subs_count > %s and inst_subs_count < %s
+                        order by total_subscribers {sort_enum}
                         offset %s 
                         limit %s
                     """
@@ -215,6 +220,7 @@ class ApiRepository:
         if len(social_networks) == 1 and social_networks[0] == SocialNetworkType.TELEGRAM:
             query = base_query + f"""
                         where tg_subs_count > %s and tg_subs_count < %s
+                        order by total_subscribers {sort_enum}
                         offset %s 
                         limit %s
                     """

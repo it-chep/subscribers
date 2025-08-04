@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 from typing import List
+
+from app.entities.sorted import SortedType
 from clients.telegram import TelegramClient
 
 from app.entities.doctor_subs import DoctorSubs, subs_short, subs_text, DoctorSubsByIDs, subs_by_digits
@@ -66,13 +68,14 @@ class ApiService(object):
     def doctors_filter(
             self,
             social_media: list[str],
+            sort_enum: SortedType,
             min_subscribers: int,
             max_subscribers: int,
             current_page: int,
             limit: int,
     ):
         doctors_dto, doctor_subs = list(), list()
-        doctor_subs: list[DoctorSubs] = self.repository.doctors_filter(social_media, min_subscribers, max_subscribers, current_page, limit)
+        doctor_subs: list[DoctorSubs] = self.repository.doctors_filter(social_media, sort_enum, min_subscribers, max_subscribers, current_page, limit)
         doctors_count, subs_count = self.repository.filtered_doctors_count(
             social_media, min_subscribers, max_subscribers
         )
