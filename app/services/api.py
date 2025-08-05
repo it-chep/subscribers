@@ -95,7 +95,7 @@ class ApiService(object):
                 )
             )
 
-        return doctors_dto, doctors_count, subs_count
+        return doctors_dto, doctors_count, subs_by_digits(subs_count)
 
     def doctors_filter(
             self,
@@ -124,7 +124,7 @@ class ApiService(object):
                 )
             )
 
-        return doctors_dto, doctors_count, subs_count
+        return doctors_dto, doctors_count, subs_by_digits(subs_count)
 
     async def update_doctor(self, doctor_id: int, instagram_channel_name: str, telegram_channel_name: str) -> bool:
         """Обновление данных о докторе по его ID, если ID нет, то просто создаем доктора"""
