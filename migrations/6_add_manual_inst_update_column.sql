@@ -1,0 +1,1 @@
+alter table doctors add column manual_inst_upgrade bool;
