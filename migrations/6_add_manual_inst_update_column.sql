@@ -1,1 +1,1 @@
-alter table doctors add column manual_inst_upgrade bool;
+alter table doctors add column manual_inst_upgrade bool not null default false;
