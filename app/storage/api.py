@@ -75,7 +75,8 @@ class ApiRepository:
             select 
                 sum(tg_subs_count) + sum(inst_subs_count) AS total_subscribers,
                 least(min(tg_last_updated), min(inst_last_updated)) AS last_updated_timestamp
-            from doctors;
+            from doctors 
+            where is_active is true;
         """
 
         try:
@@ -149,19 +150,19 @@ class ApiRepository:
 
         if not social_networks or len(social_networks) or len(social_networks) == 2:
             query = base_query + f"""
-                 and ((inst_subs_count > %s and inst_subs_count < %s) or (tg_subs_count > %s and tg_subs_count < %s))
+                 and coalesce(inst_subs_count, 0) + coalesce(tg_subs_count, 0) between %s and %s
             """
-            params = (doctors_ids, min_subscribers, max_subscribers, min_subscribers, max_subscribers)
+            params = (doctors_ids, min_subscribers, max_subscribers)
 
         if len(social_networks) == 1 and social_networks[0] == SocialNetworkType.INSTAGRAM:
             query = base_query + f"""
-                and inst_subs_count > %s and inst_subs_count < %s
+                and inst_subs_count between %s and %s
             """
             params = (doctors_ids, min_subscribers, max_subscribers)
 
         if len(social_networks) == 1 and social_networks[0] == SocialNetworkType.TELEGRAM:
             query = base_query + f"""
-                and tg_subs_count > %s and tg_subs_count < %s
+                and tg_subs_count between %s and %s
             """
             params = (doctors_ids, min_subscribers, max_subscribers)
 
@@ -190,6 +191,7 @@ class ApiRepository:
             count(*) as doctors_count, 
             sum(tg_subs_count) + sum(inst_subs_count) AS total_subscribers
         from doctors
+        where is_active is true
         """
 
         params = ()
@@ -197,19 +199,19 @@ class ApiRepository:
 
         if not social_networks or len(social_networks) or len(social_networks) == 2:
             query = base_query + f"""
-                 where (inst_subs_count > %s and inst_subs_count < %s) or (tg_subs_count > %s and tg_subs_count < %s)
+                 and coalesce(inst_subs_count, 0) + coalesce(tg_subs_count, 0) between %s and %s
             """
-            params = (min_subscribers, max_subscribers, min_subscribers, max_subscribers)
+            params = (min_subscribers, max_subscribers)
 
         if len(social_networks) == 1 and social_networks[0] == SocialNetworkType.INSTAGRAM:
             query = base_query + f"""
-                where inst_subs_count > %s and inst_subs_count < %s
+                and inst_subs_count between %s and %s
             """
             params = (min_subscribers, max_subscribers)
 
         if len(social_networks) == 1 and social_networks[0] == SocialNetworkType.TELEGRAM:
             query = base_query + f"""
-                where tg_subs_count > %s and tg_subs_count < %s
+                and tg_subs_count between %s and %s
             """
             params = (min_subscribers, max_subscribers)
 
@@ -248,21 +250,21 @@ class ApiRepository:
                        inst_subs_count,
                        coalesce(inst_subs_count, 0) + coalesce(tg_subs_count, 0) AS total_subscribers
                    from doctors
-                   where doctor_id = any(%s::bigint[])
+                   where doctor_id = any(%s::bigint[]) and is_active is true
                """
 
         if not social_networks or len(social_networks) or len(social_networks) == 2:
             query = base_query + f"""
-                         and ((inst_subs_count > %s and inst_subs_count < %s) or (tg_subs_count > %s and tg_subs_count < %s))
+                         and coalesce(inst_subs_count, 0) + coalesce(tg_subs_count, 0) between %s and %s
                          order by total_subscribers {sort_enum}
                          offset %s 
                          limit %s
                     """
-            params = (doctors_ids, min_subscribers, max_subscribers, min_subscribers, max_subscribers, offset, limit)
+            params = (doctors_ids, min_subscribers, max_subscribers, offset, limit)
 
         if len(social_networks) == 1 and social_networks[0] == SocialNetworkType.INSTAGRAM:
             query = base_query + f"""
-                        and inst_subs_count > %s and inst_subs_count < %s
+                        and inst_subs_count between %s and %s
                         order by total_subscribers {sort_enum}
                         offset %s 
                         limit %s
@@ -271,7 +273,7 @@ class ApiRepository:
 
         if len(social_networks) == 1 and social_networks[0] == SocialNetworkType.TELEGRAM:
             query = base_query + f"""
-                        and tg_subs_count > %s and tg_subs_count < %s
+                        and tg_subs_count between %s and %s
                         order by total_subscribers {sort_enum}
                         offset %s 
                         limit %s
@@ -325,15 +327,17 @@ class ApiRepository:
 
         if not social_networks or len(social_networks) or len(social_networks) == 2:
             query = base_query + f"""
-                         where (inst_subs_count > %s and inst_subs_count < %s) or (tg_subs_count > %s and tg_subs_count < %s)
+                         where coalesce(inst_subs_count, 0) + coalesce(tg_subs_count, 0) between %s and %s
+                         and is_active is true
                          order by total_subscribers {sort_enum}
                          offset %s 
                     """
-            params = (min_subscribers, max_subscribers, min_subscribers, max_subscribers, offset)
+            params = (min_subscribers, max_subscribers, offset)
 
         if len(social_networks) == 1 and social_networks[0] == SocialNetworkType.INSTAGRAM:
             query = base_query + f"""
-                        where inst_subs_count > %s and inst_subs_count < %s
+                        where inst_subs_count between %s and %s
+                        and is_active is true
                         order by total_subscribers {sort_enum}
                         offset %s 
                     """
@@ -341,7 +345,8 @@ class ApiRepository:
 
         if len(social_networks) == 1 and social_networks[0] == SocialNetworkType.TELEGRAM:
             query = base_query + f"""
-                        where tg_subs_count > %s and tg_subs_count < %s
+                        where tg_subs_count between %s and %s
+                        and is_active is true
                         order by total_subscribers {sort_enum}
                         offset %s 
                     """
@@ -377,6 +382,23 @@ class ApiRepository:
 
         try:
             rows_count = self.db.execute_with_result(query, (instagram_channel_name, telegram_channel_name, doctor_id))
+            if rows_count == 0:
+                raise DoctorNotFound(doctor_id=doctor_id)
+        except DoctorNotFound as e:
+            raise e
+        except Exception as e:
+            print("Ошибка при создании доктора в таблице", e)
+
+    def update_doctor_is_active(self, doctor_id: int, is_active: bool):
+        query = f"""
+        update doctors
+        set 
+            is_active = %s
+        where doctor_id = %s;
+        """
+
+        try:
+            rows_count = self.db.execute_with_result(query, (is_active, doctor_id))
             if rows_count == 0:
                 raise DoctorNotFound(doctor_id=doctor_id)
         except DoctorNotFound as e:

@@ -281,7 +281,7 @@ async def create_doctor(request: DoctorCreateBody):
 async def update_doctor(doctor_id: int, request: DoctorUpdateBody):
     """Обновляет информацию у доктора"""
     try:
-        updated = await api_service.update_doctor(doctor_id, request.instagram, request.telegram)
+        updated = await api_service.update_doctor(doctor_id, request.instagram, request.telegram, request.is_active)
         if updated:
             return JSONResponse(
                 status_code=status.HTTP_200_OK,
@@ -301,25 +301,25 @@ async def update_doctor(doctor_id: int, request: DoctorUpdateBody):
         )
 
 
-@router.post('/migrate_instagram/')
-async def migrate_instagram(request: DoctorCreateBody):
-    """Миграция инсты"""
-    try:
-        updated = api_service.migrate_instagram(request.doctor_id, request.instagram, )
-        if updated:
-            return JSONResponse(
-                status_code=status.HTTP_200_OK,
-                content={
-                    "message": f"Успешно обновил запись доктора ID: {request.doctor_id}, ИНСТ: {request.instagram}"}
-            )
-        return JSONResponse(
-            status_code=status.HTTP_201_CREATED,
-            content={
-                "message": f"Создал нового доктора ID: {request.doctor_id}, ИНСТ: {request.instagram}"}
-        )
-    except Exception as e:
-        print(f"Ошибка при обновлении доктора {request.doctor_id}: {e}")
-        return JSONResponse(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            content={"message": f"Ошибка при обновлении доктора {request.doctor_id}"}
-        )
+# @router.post('/migrate_instagram/')
+# async def migrate_instagram(request: DoctorCreateBody):
+#     """Миграция инсты"""
+#     try:
+#         updated = api_service.migrate_instagram(request.doctor_id, request.instagram, )
+#         if updated:
+#             return JSONResponse(
+#                 status_code=status.HTTP_200_OK,
+#                 content={
+#                     "message": f"Успешно обновил запись доктора ID: {request.doctor_id}, ИНСТ: {request.instagram}"}
+#             )
+#         return JSONResponse(
+#             status_code=status.HTTP_201_CREATED,
+#             content={
+#                 "message": f"Создал нового доктора ID: {request.doctor_id}, ИНСТ: {request.instagram}"}
+#         )
+#     except Exception as e:
+#         print(f"Ошибка при обновлении доктора {request.doctor_id}: {e}")
+#         return JSONResponse(
+#             status_code=status.HTTP_400_BAD_REQUEST,
+#             content={"message": f"Ошибка при обновлении доктора {request.doctor_id}"}
+#         )

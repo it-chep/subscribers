@@ -42,7 +42,9 @@ class DoctorUpdateBody(BaseModel):
     {
         "instagram": "it_necheporuk",
         "telegram": "mysli_maxima"
+        "is_active": true,
     }
     """
     instagram: Optional[str] = None
     telegram: Optional[str] = None
+    is_active: Optional[bool] = None
