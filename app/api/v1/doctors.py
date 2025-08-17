@@ -106,7 +106,6 @@ async def doctors_filter_with_ids(request: DoctorsFilterBody):
         sort_enum,
         min_subscribers,
         max_subscribers,
-        request.current_page or 0,
         limit,
         request.doctor_ids,
     )

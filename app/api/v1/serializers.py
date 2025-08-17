@@ -1,5 +1,5 @@
-from pydantic import BaseModel
-from typing import Optional
+from typing import Optional, List
+from pydantic import BaseModel, Field
 
 
 class DoctorsFilterBody(BaseModel):
@@ -9,19 +9,19 @@ class DoctorsFilterBody(BaseModel):
             "min_subscribers": 0,
             "max_subscribers": 100_000_000,
             "limit": 30
-            "sort": "asc:
+            "sort": "asc":
             "current_page": 1
             "doctor_ids": [1,2,3,5,67,]
         }
         """
 
-    social_media: list[str] = ["tg", "inst"]
-    min_subscribers: Optional[int] = 100
-    max_subscribers: Optional[int] = 4_000_000
-    limit: Optional[int] = 30
-    sort: Optional[str] = "desc"
-    current_page: Optional[int] = 0
-    doctor_ids: list[int]
+    social_media: List[str] = Field(default=["tg", "inst"])
+    min_subscribers: Optional[int] = Field(default=100, ge=0)
+    max_subscribers: Optional[int] = Field(default=4_000_000, ge=0)
+    limit: Optional[int] = Field(default=30, gt=0)
+    sort: Optional[str] = Field(default="desc")
+    current_page: Optional[int] = Field(default=0, ge=0)
+    doctor_ids: List[int] = Field(default_factory=list)
 
 
 class DoctorCreateBody(BaseModel):
