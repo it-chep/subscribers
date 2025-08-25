@@ -140,7 +140,7 @@ class ApiRepository:
         base_query = f""" 
         select 
             count(*) as doctors_count, 
-            sum(tg_subs_count) + sum(inst_subs_count) AS total_subscribers
+            coalesce(sum(tg_subs_count), 0) + coalesce(sum(inst_subs_count), 0) AS total_subscribers
         from doctors
         where doctor_id = any(%s::bigint[])
         """
@@ -174,13 +174,11 @@ class ApiRepository:
         try:
             doctors_count = int(result[0])
         except Exception as e:
-            print("Ошибка при подсчете докторов для фильтрации", e)
             doctors_count = 0
 
         try:
             subscribers_count = int(result[1])
         except Exception as e:
-            print("Ошибка при подсчете докторов для фильтрации", e)
             subscribers_count = 0
 
         return doctors_count, subscribers_count
@@ -198,7 +196,7 @@ class ApiRepository:
         base_query = f""" 
         select 
             count(*) as doctors_count, 
-            sum(tg_subs_count) + sum(inst_subs_count) AS total_subscribers
+            coalesce(sum(tg_subs_count), 0) + coalesce(sum(inst_subs_count), 0)  AS total_subscribers
         from doctors
         where is_active is true
         """
@@ -226,11 +224,19 @@ class ApiRepository:
 
         try:
             result = self.db.select(query, params)[0]
-            doctors_count = int(result[0])
-            subscribers_count = int(result[1])
         except Exception as e:
             print("Ошибка при подсчете докторов для фильтрации", e)
             return 0, 0
+
+        try:
+            doctors_count = int(result[0])
+        except Exception as e:
+            doctors_count = 0
+
+        try:
+            subscribers_count = int(result[1])
+        except Exception as e:
+            subscribers_count = 0
 
         return doctors_count, subscribers_count
 
