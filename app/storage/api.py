@@ -168,11 +168,20 @@ class ApiRepository:
 
         try:
             result = self.db.select(query, params)[0]
-            doctors_count = int(result[0])
-            subscribers_count = int(result[1])
         except Exception as e:
             print("Ошибка при подсчете докторов для фильтрации", e)
             return 0, 0
+        try:
+            doctors_count = int(result[0])
+        except Exception as e:
+            print("Ошибка при подсчете докторов для фильтрации", e)
+            doctors_count = 0
+
+        try:
+            subscribers_count = int(result[1])
+        except Exception as e:
+            print("Ошибка при подсчете докторов для фильтрации", e)
+            subscribers_count = 0
 
         return doctors_count, subscribers_count
 
