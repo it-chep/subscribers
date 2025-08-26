@@ -1,15 +1,16 @@
 import asyncio
+import os
 from datetime import datetime, timedelta
 import logging
 
-from app.entities.doctor_subs import DoctorSubs
+from dotenv import load_dotenv
 from app.exception.update_error import FloodWaitError, UsernameNotOccupiedError
 
 from app.entities.doctor_subs import DoctorSubs
 from app.entities.instagram_settings import InstagramSettings
 
 logger = logging.getLogger(__name__)
-
+load_dotenv()
 
 class UpdateSubscribersService(object):
     def __init__(
@@ -245,8 +246,19 @@ class UpdateSubscribersService(object):
 
     async def update_subscribers(self):
         """ Обновляет количество подписчиков """
-        # параллельно обновляем подписчиков в инсте и в тг
-        await asyncio.gather(
-            self._batched_update_inst_subscribers(),
-            self._batched_update_tg_subscribers()
-        )
+        tasks = []
+
+        inst_update = os.getenv('INST_UPDATE', '').lower() == 'true'
+        tg_update = os.getenv('TG_UPDATE', '').lower() == 'true'
+
+        if inst_update:
+            tasks.append(self._batched_update_inst_subscribers())
+
+        if tg_update:
+            tasks.append(self._batched_update_tg_subscribers())
+
+        if not tasks:
+            return
+
+        # Параллельно выполняем выбранные обновления
+        await asyncio.gather(*tasks)
