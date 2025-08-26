@@ -142,7 +142,7 @@ class ApiService(object):
             except Exception as e:
                 self.notification_client.send_error_message(str(e), "service_update_doctor")
                 return False
-        elif is_active:
+        elif is_active is not None:
             try:
                 self.repository.update_doctor_is_active(doctor_id=doctor_id, is_active=is_active)
                 return True
