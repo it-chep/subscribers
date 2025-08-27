@@ -247,10 +247,16 @@ class ApiRepository:
             min_subscribers: int,
             max_subscribers: int,
             limit: int,
+            current_page: int,
             doctors_ids: list[int],
     ):
         if len(doctors_ids) == 0:
             return 0, 0
+
+        if current_page <= 0:
+            current_page = 1
+
+        offset = (current_page - 1) * limit
 
         doctors = []
         params = doctors_ids
@@ -270,25 +276,28 @@ class ApiRepository:
             query = base_query + f"""
                          and coalesce(inst_subs_count, 0) + coalesce(tg_subs_count, 0) between %s and %s
                          order by total_subscribers {sort_enum}
+                         offset %s 
                          limit %s
                     """
-            params = (doctors_ids, min_subscribers, max_subscribers, limit)
+            params = (doctors_ids, min_subscribers, max_subscribers, offset, limit)
 
         if len(social_networks) == 1 and social_networks[0] == SocialNetworkType.INSTAGRAM:
             query = base_query + f"""
                         and inst_subs_count between %s and %s
                         order by total_subscribers {sort_enum}
+                        offset %s 
                         limit %s
                     """
-            params = (doctors_ids, min_subscribers, max_subscribers, limit)
+            params = (doctors_ids, min_subscribers, max_subscribers, offset, limit)
 
         if len(social_networks) == 1 and social_networks[0] == SocialNetworkType.TELEGRAM:
             query = base_query + f"""
                         and tg_subs_count between %s and %s
                         order by total_subscribers {sort_enum}
+                        offset %s 
                         limit %s
                     """
-            params = (doctors_ids, min_subscribers, max_subscribers, limit)
+            params = (doctors_ids, min_subscribers, max_subscribers, offset, limit)
 
         try:
             results = self.db.select(

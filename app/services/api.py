@@ -72,11 +72,12 @@ class ApiService(object):
             min_subscribers: int,
             max_subscribers: int,
             limit: int,
+            current_page: int,
             doctor_ids: list[int]
     ):
         doctors_dto, doctor_subs = list(), list()
         doctor_subs: list[DoctorSubs] = self.repository.doctors_filter_with_doctors_ids(
-            social_media, sort_enum, min_subscribers, max_subscribers, limit, doctor_ids
+            social_media, sort_enum, min_subscribers, max_subscribers, limit, current_page, doctor_ids
         )
 
         doctors_count, subs_count = self.repository.filtered_doctors_count_with_doctors_ids(
