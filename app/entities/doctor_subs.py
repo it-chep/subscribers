@@ -9,19 +9,20 @@ def subs_text(count) -> str:
     """
     Возвращает правильную форму слова "подписчик" в зависимости от количества
     """
-    count = count % 100
-    if 11 <= count % 100 <= 19:
-        text = "подписчиков"
-    else:
-        remainder = count % 10
-        if remainder == 1:
-            text = "подписчик"
-        elif 2 <= remainder <= 4:
-            text = "подписчика"
-        else:
-            text = "подписчиков"
+    # count = count % 100
+    # if 11 <= count % 100 <= 19:
+    #     text = "подписчиков"
+    # else:
+    #     remainder = count % 10
+    #     if remainder == 1:
+    #         text = "подписчик"
+    #     elif 2 <= remainder <= 4:
+    #         text = "подписчика"
+    #     else:
+    #         text = "подписчиков"
 
-    return text
+    return "подписчиков"
+
 
 def subs_by_digits(count: int) -> str:
     return "{:,}".format(count).replace(",", " ")
@@ -37,15 +38,16 @@ def subs_short(count) -> str:
     """
 
     if count >= 1_000_000:
-        short = f"{count / 1_000_000:0.1f}".replace('.', ',') + 'м'
+        short = f"{count / 1_000_000:0.1f} ".replace('.', ',') + 'млн'
     elif count >= 100_000:
-        short = f"{count // 1000}к"
+        short = f"{count // 1000} тыс"
     elif count >= 10_000:
         short = f"{count:,}".replace(',', ' ')
     else:
         short = str(count)
 
     return short
+
 
 class DoctorSubs(BaseModel):
     internal_id: int
@@ -66,6 +68,7 @@ class DoctorSubs(BaseModel):
     # подписан ли бот на этот тг канал
     tg_has_subscribed: Optional[bool] = False
 
+
 class DoctorSubsByIDs(BaseModel):
     doctor_id: int
     # количество подписчиков
@@ -73,6 +76,7 @@ class DoctorSubsByIDs(BaseModel):
 
     # количество подписчиков
     tg_subs_count: int = 0
+
 
 class UpdatedSubsQueue(BaseModel):
     # id в базе

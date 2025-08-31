@@ -284,7 +284,7 @@ class ApiRepository:
         if len(social_networks) == 1 and social_networks[0] == SocialNetworkType.INSTAGRAM:
             query = base_query + f"""
                         and inst_subs_count between %s and %s
-                        order by total_subscribers {sort_enum}
+                        order by inst_subs_count {sort_enum}
                         offset %s 
                         limit %s
                     """
@@ -293,7 +293,7 @@ class ApiRepository:
         if len(social_networks) == 1 and social_networks[0] == SocialNetworkType.TELEGRAM:
             query = base_query + f"""
                         and tg_subs_count between %s and %s
-                        order by total_subscribers {sort_enum}
+                        order by tg_subs_count {sort_enum}
                         offset %s 
                         limit %s
                     """
@@ -357,7 +357,7 @@ class ApiRepository:
             query = base_query + f"""
                         where inst_subs_count between %s and %s
                         and is_active is true
-                        order by total_subscribers {sort_enum}
+                        order by inst_subs_count {sort_enum}
                         offset %s 
                     """
             params = (min_subscribers, max_subscribers, offset)
@@ -366,7 +366,7 @@ class ApiRepository:
             query = base_query + f"""
                         where tg_subs_count between %s and %s
                         and is_active is true
-                        order by total_subscribers {sort_enum}
+                        order by tg_subs_count {sort_enum}
                         offset %s 
                     """
             params = (min_subscribers, max_subscribers, offset)
