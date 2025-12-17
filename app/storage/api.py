@@ -430,14 +430,12 @@ class ApiRepository:
             select exists(
                 select 1 from telegram_blacklist
                 where is_active is true 
-                and (telegram_username ilike %s OR telegram_name ilike %s)
+                and (telegram_username ilike '%{telegram}%' OR telegram_name ilike '%{telegram}%')
             )
         """
         try:
-            results = self.db.select(query, (telegram, telegram))
+            results = self.db.select(query)
             return results[0][0]
-        except DoctorNotFound as e:
-            raise e
         except Exception as e:
             print("Ошибка при поиске канала в чс", e)
 
