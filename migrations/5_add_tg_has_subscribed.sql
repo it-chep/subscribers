@@ -1,2 +1,2 @@
-
-alter table doctors add column tg_has_subscribed bool;
+alter table doctors
+    add column tg_has_subscribed bool;

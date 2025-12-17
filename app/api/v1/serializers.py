@@ -48,3 +48,12 @@ class DoctorUpdateBody(BaseModel):
     instagram: Optional[str] = None
     telegram: Optional[str] = None
     is_active: Optional[bool] = None
+
+
+class CheckTelegramInBlacklistRequest(BaseModel):
+    """
+    {
+        "telegram": "mysli_maxima"
+    }
+    """
+    telegram: Optional[str] = None

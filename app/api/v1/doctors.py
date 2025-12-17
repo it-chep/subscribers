@@ -7,7 +7,8 @@ from starlette.responses import JSONResponse
 
 from app.entities.sorted import SortedType
 from app.init_logic import api_service
-from app.api.v1.serializers import DoctorCreateBody, DoctorUpdateBody, DoctorsFilterBody
+from app.api.v1.serializers import DoctorCreateBody, DoctorUpdateBody, DoctorsFilterBody, \
+    CheckTelegramInBlacklistRequest
 
 router = APIRouter()
 
@@ -300,6 +301,19 @@ async def update_doctor(doctor_id: int, request: DoctorUpdateBody):
             content={"message": f"Ошибка при обновлении доктора {doctor_id}"}
         )
 
+
+@router.post('/doctors/check_telegram_in_blacklist/')
+async def check_telegram_in_blacklist(request: CheckTelegramInBlacklistRequest):
+    """Проверяет на накрутки в тгшке"""
+    try:
+        is_in_blacklist = await api_service.check_telegram_blacklist(request.telegram)
+    except Exception as e:
+        print('Ошибка при поиске данных', e)
+        return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST, content=str(e))
+    return JSONResponse(
+        status_code=status.HTTP_200_OK,
+        content={"is_in_blacklist": is_in_blacklist}
+    )
 
 # @router.post('/migrate_instagram/')
 # async def migrate_instagram(request: DoctorCreateBody):

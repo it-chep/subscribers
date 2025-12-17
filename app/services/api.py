@@ -152,6 +152,9 @@ class ApiService(object):
                 return False
         return None
 
+    async def check_telegram_blacklist(self, telegram: str) -> bool:
+        return self.repository.check_telegram_blacklist(telegram)
+
     # def migrate_instagram(self, doctor_id: int, instagram_channel_name: str) -> bool:
     #     """Обновление данных о докторе по его ID, если ID нет, то просто создаем доктора"""
     #     try:

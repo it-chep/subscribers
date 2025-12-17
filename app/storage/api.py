@@ -425,6 +425,22 @@ class ApiRepository:
         except Exception as e:
             print("Ошибка при создании доктора в таблице", e)
 
+    def check_telegram_blacklist(self, telegram: str) -> bool:
+        query = f"""
+            select exists(
+                select 1 from telegram_blacklist
+                where is_active is true 
+                and (telegram_username ilike %s OR telegram_name ilike %s)
+            )
+        """
+        try:
+            results = self.db.select(query, (telegram, telegram))
+            return results[0][0]
+        except DoctorNotFound as e:
+            raise e
+        except Exception as e:
+            print("Ошибка при поиске канала в чс", e)
+
     # def migrate_instagram(self, doctor_id: int, instagram_channel_name: str):
     #     query = f"""
     #     update doctors
