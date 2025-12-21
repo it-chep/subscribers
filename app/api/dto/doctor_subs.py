@@ -27,6 +27,15 @@ class DoctorSubsDTO:
     # текст отображения "подписчика", "подписчиков"
     telegram_text: str
 
+    ### YouTube
+    youtube_last_updated_timestamp: Optional[datetime.datetime]
+    # количество подписчиков
+    youtube_subs_count: int
+    # сокращенный вид количества подписчиков "1,3м", "300к", "9999", "10,3к"
+    youtube_short: str
+    # текст отображения "подписчика", "подписчиков"
+    youtube_text: str
+
 
 @dataclass
 class DoctorSubsFilterDTO:
@@ -41,6 +50,12 @@ class DoctorSubsFilterDTO:
     # текст отображения "подписчика", "подписчиков"
     telegram_text: str
 
+    # сокращенный вид количества подписчиков "1,3м", "300к", "9999", "10,3к"
+    youtube_short: str
+    # текст отображения "подписчика", "подписчиков"
+    youtube_text: str
+
+
 @dataclass
 class DoctorSubsByIDsDTO:
     doctor_id: int
@@ -53,3 +68,6 @@ class DoctorSubsByIDsDTO:
     tg_subs_count: str = "0"
     # название аккаунта
     telegram_text: str = ""
+
+    youtube_subs_count: str = "0"
+    youtube_text: str = ""

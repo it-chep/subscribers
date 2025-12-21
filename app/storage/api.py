@@ -22,7 +22,10 @@ class ApiRepository:
                 inst_last_updated,
                 telegram_channel_name,
                 tg_subs_count,
-                tg_last_updated
+                tg_last_updated,
+                youtube_channel_name,
+                youtube_last_updated,
+                youtube_subs_count
             from doctors 
             where doctor_id = %s;
         """
@@ -38,6 +41,10 @@ class ApiRepository:
                 telegram_channel_name=result[5] or "",
                 tg_subs_count=result[6] or 0,
                 tg_last_updated_timestamp=result[7],
+
+                youtube_channel_name=result[8] or "",
+                youtube_last_updated_timestamp=result[9],
+                youtube_subs_count=result[10] or 0,
             )
         except Exception as e:
             raise DoctorNotFound(doctor_id=doctor_id)
@@ -49,7 +56,8 @@ class ApiRepository:
             select
                 doctor_id, 
                 inst_subs_count,
-                tg_subs_count
+                tg_subs_count,
+                youtube_subs_count
             from doctors 
             where doctor_id = ANY(%s);
         """
@@ -63,6 +71,7 @@ class ApiRepository:
                     doctor_id=r[0],
                     inst_subs_count=r[1] or 0,
                     tg_subs_count=r[2] or 0,
+                    youtube_subs_count=r[3] or 0,
                 ))
 
         except Exception as e:
@@ -73,7 +82,7 @@ class ApiRepository:
     def get_all_subscribers_count(self) -> (int, Optional[datetime.datetime]):
         query = f""" 
             select 
-                sum(tg_subs_count) + sum(inst_subs_count) AS total_subscribers,
+                sum(tg_subs_count) + sum(inst_subs_count) + sum(youtube_subs_count) AS total_subscribers,
                 least(min(tg_last_updated), min(inst_last_updated)) AS last_updated_timestamp
             from doctors 
             where is_active is true;
@@ -140,7 +149,7 @@ class ApiRepository:
         base_query = f""" 
         select 
             count(*) as doctors_count, 
-            coalesce(sum(tg_subs_count), 0) + coalesce(sum(inst_subs_count), 0) AS total_subscribers
+            coalesce(sum(tg_subs_count), 0) + coalesce(sum(inst_subs_count), 0) + coalesce(sum(youtube_subs_count), 0) AS total_subscribers
         from doctors
         where doctor_id = any(%s::bigint[])
         """
@@ -148,9 +157,9 @@ class ApiRepository:
         params = ()
         query = ""
 
-        if not social_networks or len(social_networks) or len(social_networks) == 2:
+        if not social_networks or len(social_networks) or len(social_networks) == 3:
             query = base_query + f"""
-                 and coalesce(inst_subs_count, 0) + coalesce(tg_subs_count, 0) between %s and %s
+                 and coalesce(inst_subs_count, 0) + coalesce(tg_subs_count, 0) + coalesce(sum(youtube_subs_count), 0) between %s and %s
             """
             params = (doctors_ids, min_subscribers, max_subscribers)
 
@@ -163,6 +172,12 @@ class ApiRepository:
         if len(social_networks) == 1 and social_networks[0] == SocialNetworkType.TELEGRAM:
             query = base_query + f"""
                 and tg_subs_count between %s and %s
+            """
+            params = (doctors_ids, min_subscribers, max_subscribers)
+
+        if len(social_networks) == 1 and social_networks[0] == SocialNetworkType.YOUTUBE:
+            query = base_query + f"""
+                and youtube_subs_count between %s and %s
             """
             params = (doctors_ids, min_subscribers, max_subscribers)
 
@@ -196,7 +211,7 @@ class ApiRepository:
         base_query = f""" 
         select 
             count(*) as doctors_count, 
-            coalesce(sum(tg_subs_count), 0) + coalesce(sum(inst_subs_count), 0)  AS total_subscribers
+            coalesce(sum(tg_subs_count), 0) + coalesce(sum(inst_subs_count), 0) + coalesce(sum(youtube_subs_count), 0) AS total_subscribers
         from doctors
         where is_active is true
         """
@@ -204,7 +219,7 @@ class ApiRepository:
         params = ()
         query = ""
 
-        if not social_networks or len(social_networks) or len(social_networks) == 2:
+        if not social_networks or len(social_networks) or len(social_networks) == 3:
             query = base_query + f"""
                  and coalesce(inst_subs_count, 0) + coalesce(tg_subs_count, 0) between %s and %s
             """
@@ -219,6 +234,12 @@ class ApiRepository:
         if len(social_networks) == 1 and social_networks[0] == SocialNetworkType.TELEGRAM:
             query = base_query + f"""
                 and tg_subs_count between %s and %s
+            """
+            params = (min_subscribers, max_subscribers)
+
+        if len(social_networks) == 1 and social_networks[0] == SocialNetworkType.YOUTUBE:
+            query = base_query + f"""
+                and youtube_subs_count between %s and %s
             """
             params = (min_subscribers, max_subscribers)
 
@@ -267,14 +288,15 @@ class ApiRepository:
                        doctor_id,
                        coalesce(tg_subs_count, 0),
                        coalesce(inst_subs_count, 0),
-                       coalesce(inst_subs_count, 0) + coalesce(tg_subs_count, 0) AS total_subscribers
+                       coalesce(youtube_subs_count, 0),
+                       coalesce(inst_subs_count, 0) + coalesce(tg_subs_count, 0) + coalesce(youtube_subs_count, 0) AS total_subscribers
                    from doctors
                    where doctor_id = any(%s::bigint[]) and is_active is true
                """
 
-        if not social_networks or (len(social_networks) and len(social_networks) == 2):
+        if not social_networks or (len(social_networks) and len(social_networks) == 3):
             query = base_query + f"""
-                         and coalesce(inst_subs_count, 0) + coalesce(tg_subs_count, 0) between %s and %s
+                         and coalesce(inst_subs_count, 0) + coalesce(tg_subs_count, 0) + coalesce(youtube_subs_count, 0) between %s and %s
                          order by total_subscribers {sort_enum}
                          offset %s 
                          limit %s
@@ -299,6 +321,15 @@ class ApiRepository:
                     """
             params = (doctors_ids, min_subscribers, max_subscribers, offset, limit)
 
+        if len(social_networks) == 1 and social_networks[0] == SocialNetworkType.YOUTUBE:
+            query = base_query + f"""
+                        and youtube_subs_count between %s and %s
+                        order by youtube_subs_count {sort_enum}
+                        offset %s 
+                        limit %s
+                    """
+            params = (doctors_ids, min_subscribers, max_subscribers, offset, limit)
+
         try:
             results = self.db.select(
                 query, params
@@ -310,6 +341,7 @@ class ApiRepository:
                         doctor_id=result[0],
                         tg_subs_count=int(result[1]),
                         inst_subs_count=int(result[2]),
+                        youtube_subs_count=int(result[3]),
                     )
                 )
 
@@ -340,13 +372,14 @@ class ApiRepository:
                 doctor_id,
                 tg_subs_count,
                 inst_subs_count,
-                coalesce(inst_subs_count, 0) + coalesce(tg_subs_count, 0) AS total_subscribers
+                youtube_subs_count,
+                coalesce(inst_subs_count, 0) + coalesce(tg_subs_count, 0) + coalesce(youtube_subs_count, 0) AS total_subscribers
             from doctors
         """
 
-        if not social_networks or len(social_networks) or len(social_networks) == 2:
+        if not social_networks or len(social_networks) or len(social_networks) == 3:
             query = base_query + f"""
-                         where coalesce(inst_subs_count, 0) + coalesce(tg_subs_count, 0) between %s and %s
+                         where coalesce(inst_subs_count, 0) + coalesce(tg_subs_count, 0) + coalesce(youtube_subs_count, 0) between %s and %s
                          and is_active is true
                          order by total_subscribers {sort_enum}
                          offset %s 
@@ -367,6 +400,15 @@ class ApiRepository:
                         where tg_subs_count between %s and %s
                         and is_active is true
                         order by tg_subs_count {sort_enum}
+                        offset %s 
+                    """
+            params = (min_subscribers, max_subscribers, offset)
+
+        if len(social_networks) == 1 and social_networks[0] == SocialNetworkType.YOUTUBE:
+            query = base_query + f"""
+                        where youtube_subs_count between %s and %s
+                        and is_active is true
+                        order by youtube_subs_count {sort_enum}
                         offset %s 
                     """
             params = (min_subscribers, max_subscribers, offset)

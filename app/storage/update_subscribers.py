@@ -71,7 +71,7 @@ class UpdateSubscribersRepository:
                 set tg_has_subscribed = true
                 where doctor_id = %s
                 """
-        self.db.execute(query, (doctor_id, ))
+        self.db.execute(query, (doctor_id,))
         self.db.commit()
 
     def commit_update_subscribers(self, subscribers_id: int, doctor_id: int):
@@ -162,7 +162,7 @@ class UpdateSubscribersRepository:
                        inst_subs_count,
                        inst_last_updated
                 from doctors
-                where manual_inst_upgrade is false 
+                where manual_inst_upgrade is false
                   and instagram_channel_name is not null
                   and instagram_channel_name != ''
                   and id > %s
@@ -184,3 +184,84 @@ class UpdateSubscribersRepository:
         except Exception as e:
             print(f"Error fetching telegram channels with offset: {str(e)}")
             raise
+
+    def commit_update_youtube_subscribers(self, subscribers_id: int, doctor_id: int):
+        """Коммитит обновление подписчиков в update_youtube_subscribers_queue"""
+        query = """
+                insert into update_youtube_subscribers_queue (id, last_updated_id, last_updated_at, id_in_subscribers)
+                values (1, %s, now(), %s)
+                on conflict (id) do update set last_updated_id   = excluded.last_updated_id,
+                                               last_updated_at   = now(),
+                                               id_in_subscribers = excluded.id_in_subscribers
+                """
+        self.db.execute(query, (doctor_id, subscribers_id))
+        self.db.commit()
+
+    def get_last_updated_youtube_doctor(self) -> List[UpdatedSubsQueue]:
+        """Получение данных об обновлении подписчиков из update_youtube_subscribers_queue"""
+        query = """
+                select id, last_updated_id, id_in_subscribers, last_updated_at
+                from update_youtube_subscribers_queue;
+                """
+
+        try:
+            result = self.db.select(query)
+            # если никого нет, значит это первое обновление
+            if len(result) == 0:
+                doctors = self.get_youtube_channels_with_offset(0)
+                self.commit_update_youtube_subscribers(doctors[0].internal_id, doctors[0].doctor_id)
+                return []
+
+            return [
+                UpdatedSubsQueue(
+                    _id=row[0],
+                    last_updated_id=row[1],
+                    id_in_subscribers=row[2],
+                    last_updated_at=row[3],
+                ) for row in result
+            ]
+        except Exception as e:
+            print(f"Error fetching YOUTUBE last_updated_doctor: {str(e)}")
+            raise
+
+    def get_youtube_channels_with_offset(self, offset: int) -> List[DoctorSubs]:
+        """Получает список всех докторов с их YOUTUBE-каналами с оффсетом и лимитом для обновления батчами"""
+        query = """
+                select id,
+                       doctor_id,
+                       youtube_channel_name,
+                       youtube_subs_count,
+                       youtube_last_updated
+                from doctors
+                where youtube_channel_name is not null
+                  and youtube_channel_name != ''
+                  and id > %s
+                order by id
+                limit 2
+                """
+
+        try:
+            result = self.db.select(query, (offset,))
+            return [
+                DoctorSubs(
+                    internal_id=row[0],
+                    doctor_id=row[1],
+                    youtube_channel_name=row[2],
+                    youtube_subs_count=row[3] or 0,
+                    youtube_last_updated_timestamp=row[4]
+                ) for row in result
+            ]
+        except Exception as e:
+            print(f"Error fetching YOUTUBE channels with offset: {str(e)}")
+            raise
+
+    def update_youtube_subscribers(self, doctor_id: int, subscribers: int):
+        """Обновляет количество подписчиков в Telegram"""
+        query = """
+                update doctors
+                set youtube_subs_count   = %s,
+                    youtube_last_updated = now()
+                where doctor_id = %s
+                """
+        self.db.execute(query, (subscribers, doctor_id))
+        self.db.commit()

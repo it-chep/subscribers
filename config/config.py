@@ -34,12 +34,17 @@ class SalebotConfig(BaseModel):
     admin_chat_id: int
 
 
+class YouTubeConfig(BaseModel):
+    api_key: str
+
+
 class Config(BaseModel):
     db: DbConfig
     telegram: TelegramConfig
     instagrapi: InstagrapiConfig
     salebot: SalebotConfig
     instagramGraphApi: InstagramGraphApiConfig
+    youtube: YouTubeConfig
 
     @classmethod
     def load(cls, path: str = "config/values.yaml") -> "Config":

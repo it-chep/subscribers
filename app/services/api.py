@@ -36,6 +36,11 @@ class ApiService(object):
             telegram_short=subs_short(doctor.tg_subs_count),
             telegram_text=subs_text(doctor.tg_subs_count),
             tg_last_updated_timestamp=doctor.tg_last_updated_timestamp,
+
+            youtube_last_updated_timestamp=doctor.youtube_last_updated_timestamp,
+            youtube_subs_count=doctor.youtube_subs_count,
+            youtube_short=subs_short(doctor.youtube_subs_count),
+            youtube_text=subs_text(doctor.youtube_subs_count),
         )
 
     def get_all_subscribers_count(self):
@@ -52,6 +57,8 @@ class ApiService(object):
                 instagram_text=subs_text(doctor.inst_subs_count),
                 tg_subs_count=subs_short(doctor.tg_subs_count),
                 telegram_text=subs_text(doctor.tg_subs_count),
+                youtube_subs_count=subs_short(doctor.youtube_subs_count),
+                youtube_text=subs_text(doctor.youtube_subs_count),
             ))
 
         return result
@@ -92,6 +99,8 @@ class ApiService(object):
                     inst_text=subs_text(doctor_sub.inst_subs_count),
                     telegram_short=subs_short(doctor_sub.tg_subs_count),
                     telegram_text=subs_text(doctor_sub.tg_subs_count),
+                    youtube_short=subs_short(doctor_sub.youtube_subs_count),
+                    youtube_text=subs_text(doctor_sub.youtube_subs_count),
                 )
             )
 
@@ -121,6 +130,8 @@ class ApiService(object):
                     inst_text=subs_text(doctor_sub.inst_subs_count),
                     telegram_short=subs_short(doctor_sub.tg_subs_count),
                     telegram_text=subs_text(doctor_sub.tg_subs_count),
+                    youtube_short=subs_short(doctor_sub.youtube_subs_count),
+                    youtube_text=subs_text(doctor_sub.youtube_subs_count),
                 )
             )
 

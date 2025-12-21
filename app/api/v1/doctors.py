@@ -73,6 +73,8 @@ async def info_by_ids(doctor_ids: str):
             "instagram_subs_text": dto.instagram_text,
             "telegram_subs_count": dto.tg_subs_count,
             "telegram_subs_text": dto.telegram_text,
+            "youtube_subs_count": dto.youtube_subs_count,
+            "youtube_subs_text": dto.youtube_text,
         }
 
     return JSONResponse(
@@ -121,6 +123,8 @@ async def doctors_filter_with_ids(request: DoctorsFilterBody):
                 "inst_text": doctor.inst_text,
                 "telegram_short": doctor.telegram_short,
                 "telegram_text": doctor.telegram_text,
+                "youtube_short": doctor.youtube_short,
+                "youtube_text": doctor.youtube_text,
             }
         })
 
@@ -217,6 +221,8 @@ async def doctors_filter(
                 "inst_text": doctor.inst_text,
                 "telegram_short": doctor.telegram_short,
                 "telegram_text": doctor.telegram_text,
+                "youtube_short": doctor.youtube_short,
+                "youtube_text": doctor.youtube_text,
             }
         })
 
@@ -249,6 +255,10 @@ async def doctor_subscribers(doctor_id: int):
     if doctor.inst_last_updated_timestamp:
         inst_formatted_date = doctor.inst_last_updated_timestamp.strftime("%d.%m.%Y")
 
+    youtube_formatted_date = None
+    if doctor.youtube_last_updated_timestamp:
+        youtube_formatted_date = doctor.youtube_last_updated_timestamp.strftime("%d.%m.%Y")
+
     return {
         "doctor_id": doctor.doctor_id,
 
@@ -260,7 +270,12 @@ async def doctor_subscribers(doctor_id: int):
         "telegram": doctor.tg_subs_count,
         "telegram_short": doctor.telegram_short,
         "telegram_text": doctor.telegram_text,
-        "tg_last_updated_date": tg_formatted_date
+        "tg_last_updated_date": tg_formatted_date,
+
+        "youtube": doctor.youtube_subs_count,
+        "youtube_text": doctor.youtube_text,
+        "youtube_last_updated_date": youtube_formatted_date,
+        "youtube_short": doctor.youtube_short,
     }
 
 
