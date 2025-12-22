@@ -283,7 +283,7 @@ async def doctor_subscribers(doctor_id: int):
 async def create_doctor(request: DoctorCreateBody):
     """Создает нового доктора в базе"""
     try:
-        await api_service.create_doctor(request.doctor_id, request.instagram, request.telegram)
+        await api_service.create_doctor(request.doctor_id, request.instagram, request.telegram, request.youtube)
     except Exception as e:
         print('Ошибка при создании доктора create_doctor', e)
         return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST, content=str(e))
@@ -297,7 +297,11 @@ async def create_doctor(request: DoctorCreateBody):
 async def update_doctor(doctor_id: int, request: DoctorUpdateBody):
     """Обновляет информацию у доктора"""
     try:
-        updated = await api_service.update_doctor(doctor_id, request.instagram, request.telegram, request.is_active)
+        updated = await api_service.update_doctor(
+            doctor_id,
+            request.instagram, request.telegram, request.youtube,
+            request.is_active
+        )
         if updated:
             return JSONResponse(
                 status_code=status.HTTP_200_OK,

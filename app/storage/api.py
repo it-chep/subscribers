@@ -7,6 +7,12 @@ from app.entities.doctor_subs import DoctorSubs, DoctorSubsByIDs
 from app.entities.messengers import Messenger, SocialNetworkType
 from app.exception.domain_error import DoctorNotFound
 
+SOCIAL_NETWORK_FIELDS = {
+    SocialNetworkType.INSTAGRAM: "inst_subs_count",
+    SocialNetworkType.TELEGRAM: "tg_subs_count",
+    SocialNetworkType.YOUTUBE: "youtube_subs_count",
+}
+
 
 class ApiRepository:
 
@@ -98,20 +104,29 @@ class ApiRepository:
             print("Ошибка получения количества подписчиков", e)
             return 0, None
 
-    def create_doctor_subscriber(self, doctor_id: int, instagram_channel_name: str, telegram_channel_name: str) -> None:
+    def create_doctor_subscriber(
+            self, doctor_id: int,
+            instagram_channel_name: str,
+            telegram_channel_name: str,
+            youtube_channel_name: str
+    ) -> None:
         query = f"""insert into doctors (
                 doctor_id, 
                 instagram_channel_name,
                 telegram_channel_name,
+                youtube_channel_name,
                 tg_has_subscribed
         ) 
-        values (%s, %s, %s, false)
+        values (%s, %s, %s, %s, false)
         on conflict (doctor_id) do nothing
         returning id;
         """
 
         try:
-            self.db.execute(query, (doctor_id, instagram_channel_name, telegram_channel_name))
+            self.db.execute(
+                query,
+                (doctor_id, instagram_channel_name, telegram_channel_name, youtube_channel_name)
+            )
         except Exception as e:
             print("Ошибка при создании доктора в таблице", e)
 
@@ -157,28 +172,32 @@ class ApiRepository:
         params = ()
         query = ""
 
-        if not social_networks or len(social_networks) or len(social_networks) == 3:
-            query = base_query + f"""
-                 and coalesce(inst_subs_count, 0) + coalesce(tg_subs_count, 0) + coalesce(sum(youtube_subs_count), 0) between %s and %s
-            """
-            params = (doctors_ids, min_subscribers, max_subscribers)
+        # Все либо никаких специальностей
+        if not social_networks or len(social_networks) or len(social_networks) == len(SOCIAL_NETWORK_FIELDS.keys()):
+            coalesce_query = ""
+            counter = 0
+            for social_network in SOCIAL_NETWORK_FIELDS.values():
+                counter += 1
+                if counter == len(SOCIAL_NETWORK_FIELDS.keys()):
+                    coalesce_query += f"coalesce({social_network}, 0) "
+                    continue
+                coalesce_query += f"coalesce({social_network}, 0) + "
 
-        if len(social_networks) == 1 and social_networks[0] == SocialNetworkType.INSTAGRAM:
-            query = base_query + f"""
-                and inst_subs_count between %s and %s
-            """
-            params = (doctors_ids, min_subscribers, max_subscribers)
+            query = base_query + f"and {coalesce_query} between %s and %s"
 
-        if len(social_networks) == 1 and social_networks[0] == SocialNetworkType.TELEGRAM:
-            query = base_query + f"""
-                and tg_subs_count between %s and %s
-            """
-            params = (doctors_ids, min_subscribers, max_subscribers)
+        if social_networks and len(social_networks) != len(SOCIAL_NETWORK_FIELDS.keys()):
+            coalesce_query = ""
+            counter = 0
+            for social_network in social_networks:
+                counter += 1
+                if counter == len(social_networks):
+                    coalesce_query += f"coalesce({SOCIAL_NETWORK_FIELDS[social_network]}, 0)"
+                    continue
+                coalesce_query += f"coalesce({SOCIAL_NETWORK_FIELDS[social_network]}, 0) + "
 
-        if len(social_networks) == 1 and social_networks[0] == SocialNetworkType.YOUTUBE:
-            query = base_query + f"""
-                and youtube_subs_count between %s and %s
-            """
+            query = base_query + f"and {coalesce_query} between %s and %s "
+
+        if len(query) != 0:
             params = (doctors_ids, min_subscribers, max_subscribers)
 
         try:
@@ -219,28 +238,32 @@ class ApiRepository:
         params = ()
         query = ""
 
-        if not social_networks or len(social_networks) or len(social_networks) == 3:
-            query = base_query + f"""
-                 and coalesce(inst_subs_count, 0) + coalesce(tg_subs_count, 0) between %s and %s
-            """
-            params = (min_subscribers, max_subscribers)
+        # Все либо никаких специальностей
+        if not social_networks or len(social_networks) or len(social_networks) == len(SOCIAL_NETWORK_FIELDS.keys()):
+            coalesce_query = ""
+            counter = 0
+            for social_network in SOCIAL_NETWORK_FIELDS.values():
+                counter += 1
+                if counter == len(SOCIAL_NETWORK_FIELDS.keys()):
+                    coalesce_query += f"coalesce({social_network}, 0) "
+                    continue
+                coalesce_query += f"coalesce({social_network}, 0) + "
 
-        if len(social_networks) == 1 and social_networks[0] == SocialNetworkType.INSTAGRAM:
-            query = base_query + f"""
-                and inst_subs_count between %s and %s
-            """
-            params = (min_subscribers, max_subscribers)
+            query = base_query + f"and {coalesce_query} between %s and %s"
 
-        if len(social_networks) == 1 and social_networks[0] == SocialNetworkType.TELEGRAM:
-            query = base_query + f"""
-                and tg_subs_count between %s and %s
-            """
-            params = (min_subscribers, max_subscribers)
+        if social_networks and len(social_networks) != len(SOCIAL_NETWORK_FIELDS.keys()):
+            coalesce_query = ""
+            counter = 0
+            for social_network in social_networks:
+                counter += 1
+                if counter == len(social_networks):
+                    coalesce_query += f"coalesce({SOCIAL_NETWORK_FIELDS[social_network]}, 0)"
+                    continue
+                coalesce_query += f"coalesce({SOCIAL_NETWORK_FIELDS[social_network]}, 0) + "
 
-        if len(social_networks) == 1 and social_networks[0] == SocialNetworkType.YOUTUBE:
-            query = base_query + f"""
-                and youtube_subs_count between %s and %s
-            """
+            query = base_query + f"and {coalesce_query} between %s and %s "
+
+        if len(query) != 0:
             params = (min_subscribers, max_subscribers)
 
         try:
@@ -294,40 +317,48 @@ class ApiRepository:
                    where doctor_id = any(%s::bigint[]) and is_active is true
                """
 
-        if not social_networks or (len(social_networks) and len(social_networks) == 3):
-            query = base_query + f"""
-                         and coalesce(inst_subs_count, 0) + coalesce(tg_subs_count, 0) + coalesce(youtube_subs_count, 0) between %s and %s
-                         order by total_subscribers {sort_enum}
-                         offset %s 
-                         limit %s
-                    """
-            params = (doctors_ids, min_subscribers, max_subscribers, offset, limit)
+        # Все либо никаких специальностей
+        if not social_networks or len(social_networks) or len(social_networks) == len(SOCIAL_NETWORK_FIELDS.keys()):
+            coalesce_query = ""
+            counter = 0
+            for social_network in SOCIAL_NETWORK_FIELDS.values():
+                counter += 1
+                if counter == len(SOCIAL_NETWORK_FIELDS.keys()):
+                    coalesce_query += f"coalesce({social_network}, 0) "
+                    continue
+                coalesce_query += f"coalesce({social_network}, 0) + "
 
-        if len(social_networks) == 1 and social_networks[0] == SocialNetworkType.INSTAGRAM:
             query = base_query + f"""
-                        and inst_subs_count between %s and %s
-                        order by inst_subs_count {sort_enum}
-                        offset %s 
-                        limit %s
-                    """
-            params = (doctors_ids, min_subscribers, max_subscribers, offset, limit)
+                and {coalesce_query} between %s and %s 
+                order by total_subscribers {sort_enum} 
+            """
 
-        if len(social_networks) == 1 and social_networks[0] == SocialNetworkType.TELEGRAM:
+        if social_networks and len(social_networks) == 1:
             query = base_query + f"""
-                        and tg_subs_count between %s and %s
-                        order by tg_subs_count {sort_enum}
-                        offset %s 
-                        limit %s
-                    """
-            params = (doctors_ids, min_subscribers, max_subscribers, offset, limit)
+                and {SOCIAL_NETWORK_FIELDS[social_networks[0]]} between %s and %s
+                order by {SOCIAL_NETWORK_FIELDS[social_networks[0]]} {sort_enum}
+            """
 
-        if len(social_networks) == 1 and social_networks[0] == SocialNetworkType.YOUTUBE:
+        if social_networks and len(social_networks) != len(SOCIAL_NETWORK_FIELDS.keys()) and len(social_networks) != 1:
+            coalesce_query = ""
+            counter = 0
+            for social_network in social_networks:
+                counter += 1
+                if counter == len(social_networks):
+                    coalesce_query += f"coalesce({SOCIAL_NETWORK_FIELDS[social_network]}, 0)"
+                    continue
+                coalesce_query += f"coalesce({SOCIAL_NETWORK_FIELDS[social_network]}, 0) + "
+
             query = base_query + f"""
-                        and youtube_subs_count between %s and %s
-                        order by youtube_subs_count {sort_enum}
-                        offset %s 
-                        limit %s
-                    """
+                and {coalesce_query} between %s and %s 
+                order by total_subscribers {sort_enum} 
+            """
+
+        if len(query) != 0:
+            query += """
+                offset %s 
+                limit %s
+            """
             params = (doctors_ids, min_subscribers, max_subscribers, offset, limit)
 
         try:
@@ -377,40 +408,47 @@ class ApiRepository:
             from doctors
         """
 
-        if not social_networks or len(social_networks) or len(social_networks) == 3:
-            query = base_query + f"""
-                         where coalesce(inst_subs_count, 0) + coalesce(tg_subs_count, 0) + coalesce(youtube_subs_count, 0) between %s and %s
-                         and is_active is true
-                         order by total_subscribers {sort_enum}
-                         offset %s 
-                    """
-            params = (min_subscribers, max_subscribers, offset)
+        # Все либо никаких специальностей
+        if not social_networks or len(social_networks) or len(social_networks) == len(SOCIAL_NETWORK_FIELDS.keys()):
+            coalesce_query = ""
+            counter = 0
+            for social_network in SOCIAL_NETWORK_FIELDS.values():
+                counter += 1
+                if counter == len(SOCIAL_NETWORK_FIELDS.keys()):
+                    coalesce_query += f"coalesce({social_network}, 0) "
+                    continue
+                coalesce_query += f"coalesce({social_network}, 0) + "
 
-        if len(social_networks) == 1 and social_networks[0] == SocialNetworkType.INSTAGRAM:
             query = base_query + f"""
-                        where inst_subs_count between %s and %s
-                        and is_active is true
-                        order by inst_subs_count {sort_enum}
-                        offset %s 
-                    """
-            params = (min_subscribers, max_subscribers, offset)
+                and {coalesce_query} between %s and %s and is_active is true
+                order by total_subscribers {sort_enum} 
+            """
 
-        if len(social_networks) == 1 and social_networks[0] == SocialNetworkType.TELEGRAM:
+        if social_networks and len(social_networks) == 1:
             query = base_query + f"""
-                        where tg_subs_count between %s and %s
-                        and is_active is true
-                        order by tg_subs_count {sort_enum}
-                        offset %s 
-                    """
-            params = (min_subscribers, max_subscribers, offset)
+                and {SOCIAL_NETWORK_FIELDS[social_networks[0]]} between %s and %s and is_active is true
+                order by {SOCIAL_NETWORK_FIELDS[social_networks[0]]} {sort_enum}
+            """
 
-        if len(social_networks) == 1 and social_networks[0] == SocialNetworkType.YOUTUBE:
+        if social_networks and len(social_networks) != len(SOCIAL_NETWORK_FIELDS.keys()) and len(social_networks) != 1:
+            coalesce_query = ""
+            counter = 0
+            for social_network in social_networks:
+                counter += 1
+                if counter == len(social_networks):
+                    coalesce_query += f"coalesce({SOCIAL_NETWORK_FIELDS[social_network]}, 0)"
+                    continue
+                coalesce_query += f"coalesce({SOCIAL_NETWORK_FIELDS[social_network]}, 0) + "
+
             query = base_query + f"""
-                        where youtube_subs_count between %s and %s
-                        and is_active is true
-                        order by youtube_subs_count {sort_enum}
-                        offset %s 
-                    """
+                and {coalesce_query} between %s and %s and is_active is true
+                order by total_subscribers {sort_enum} 
+            """
+
+        if len(query) != 0:
+            query += """
+                offset %s 
+            """
             params = (min_subscribers, max_subscribers, offset)
 
         try:
@@ -424,6 +462,7 @@ class ApiRepository:
                         doctor_id=result[0],
                         tg_subs_count=result[1] or 0,
                         inst_subs_count=result[2] or 0,
+                        youtube_subs_count=result[3] or 0,
                     )
                 )
 
@@ -432,17 +471,23 @@ class ApiRepository:
 
         return doctors
 
-    def update_doctor(self, doctor_id: int, instagram_channel_name: str, telegram_channel_name: str):
+    def update_doctor(
+            self,
+            doctor_id: int,
+            instagram_channel_name: str, telegram_channel_name: str, youtube_channel_name: str
+    ):
         query = f"""
         update doctors
         set 
             instagram_channel_name = %s,
-            telegram_channel_name = %s
+            telegram_channel_name = %s,
+            youtube_channel_name = %s
         where doctor_id = %s;
         """
 
         try:
-            rows_count = self.db.execute_with_result(query, (instagram_channel_name, telegram_channel_name, doctor_id))
+            rows_count = self.db.execute_with_result(
+                query, (instagram_channel_name, telegram_channel_name, youtube_channel_name, doctor_id))
             if rows_count == 0:
                 raise DoctorNotFound(doctor_id=doctor_id)
         except DoctorNotFound as e:
