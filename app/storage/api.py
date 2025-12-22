@@ -474,20 +474,19 @@ class ApiRepository:
     def update_doctor(
             self,
             doctor_id: int,
-            instagram_channel_name: str, telegram_channel_name: str, youtube_channel_name: str
+            instagram_channel_name: str, telegram_channel_name: str
     ):
         query = f"""
         update doctors
         set 
             instagram_channel_name = %s,
-            telegram_channel_name = %s,
-            youtube_channel_name = %s
+            telegram_channel_name = %s
         where doctor_id = %s;
         """
 
         try:
             rows_count = self.db.execute_with_result(
-                query, (instagram_channel_name, telegram_channel_name, youtube_channel_name, doctor_id))
+                query, (instagram_channel_name, telegram_channel_name, doctor_id))
             if rows_count == 0:
                 raise DoctorNotFound(doctor_id=doctor_id)
         except DoctorNotFound as e:

@@ -45,7 +45,6 @@ class DoctorUpdateBody(BaseModel):
         "instagram": "it_necheporuk",
         "telegram": "mysli_maxima"
         "is_active": true,
-        "youtube": "readydoctor"
     }
     """
     instagram: Optional[str] = None

@@ -299,7 +299,7 @@ async def update_doctor(doctor_id: int, request: DoctorUpdateBody):
     try:
         updated = await api_service.update_doctor(
             doctor_id,
-            request.instagram, request.telegram, request.youtube,
+            request.instagram, request.telegram,
             request.is_active
         )
         if updated:

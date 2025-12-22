@@ -149,18 +149,15 @@ class ApiService(object):
             self, doctor_id: int,
             instagram_channel_name: str,
             telegram_channel_name: str,
-            youtube_channel_name: str,
             is_active: bool
     ) -> bool:
         """Обновление данных о докторе по его ID, если ID нет, то просто создаем доктора"""
         if instagram_channel_name or telegram_channel_name:
             try:
-                self.repository.update_doctor(doctor_id, instagram_channel_name, telegram_channel_name,
-                                              youtube_channel_name)
+                self.repository.update_doctor(doctor_id, instagram_channel_name, telegram_channel_name)
                 return True
             except DoctorNotFound:
-                self.repository.create_doctor_subscriber(doctor_id, instagram_channel_name, telegram_channel_name,
-                                                         youtube_channel_name)
+                self.repository.create_doctor_subscriber(doctor_id, instagram_channel_name, telegram_channel_name, "")
                 return False
             except Exception as e:
                 self.notification_client.send_error_message(str(e), "service_update_doctor")
