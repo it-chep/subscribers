@@ -88,10 +88,10 @@ class ApiRepository:
     def get_all_subscribers_count(self) -> (int, Optional[datetime.datetime]):
         query = f""" 
             select 
-                sum(tg_subs_count) + sum(inst_subs_count) + sum(youtube_subs_count) AS total_subscribers,
-                least(min(tg_last_updated), min(inst_last_updated)) AS last_updated_timestamp
+                coalesce(sum(tg_subs_count), 0) + coalesce(sum(inst_subs_count),0) + coalesce(sum(youtube_subs_count), 0) AS total_subscribers,
+                least(min(tg_last_updated), min(inst_last_updated), min(youtube_last_updated)) AS last_updated_timestamp
             from doctors 
-            where is_active is true;
+            where is_active is true
         """
 
         try:
@@ -239,7 +239,7 @@ class ApiRepository:
         query = ""
 
         # Все либо никаких специальностей
-        if not social_networks or len(social_networks) or len(social_networks) == len(SOCIAL_NETWORK_FIELDS.keys()):
+        if not social_networks or len(social_networks) == len(SOCIAL_NETWORK_FIELDS.keys()):
             coalesce_query = ""
             counter = 0
             for social_network in SOCIAL_NETWORK_FIELDS.values():
@@ -318,7 +318,7 @@ class ApiRepository:
                """
 
         # Все либо никаких специальностей
-        if not social_networks or len(social_networks) or len(social_networks) == len(SOCIAL_NETWORK_FIELDS.keys()):
+        if not social_networks or len(social_networks) == len(SOCIAL_NETWORK_FIELDS.keys()):
             coalesce_query = ""
             counter = 0
             for social_network in SOCIAL_NETWORK_FIELDS.values():
@@ -406,10 +406,11 @@ class ApiRepository:
                 youtube_subs_count,
                 coalesce(inst_subs_count, 0) + coalesce(tg_subs_count, 0) + coalesce(youtube_subs_count, 0) AS total_subscribers
             from doctors
+            where is_active is true 
         """
 
         # Все либо никаких специальностей
-        if not social_networks or len(social_networks) or len(social_networks) == len(SOCIAL_NETWORK_FIELDS.keys()):
+        if not social_networks or len(social_networks) == len(SOCIAL_NETWORK_FIELDS.keys()):
             coalesce_query = ""
             counter = 0
             for social_network in SOCIAL_NETWORK_FIELDS.values():
@@ -420,13 +421,13 @@ class ApiRepository:
                 coalesce_query += f"coalesce({social_network}, 0) + "
 
             query = base_query + f"""
-                and {coalesce_query} between %s and %s and is_active is true
+                and {coalesce_query} between %s and %s
                 order by total_subscribers {sort_enum} 
             """
 
         if social_networks and len(social_networks) == 1:
             query = base_query + f"""
-                and {SOCIAL_NETWORK_FIELDS[social_networks[0]]} between %s and %s and is_active is true
+                and {SOCIAL_NETWORK_FIELDS[social_networks[0]]} between %s and %s
                 order by {SOCIAL_NETWORK_FIELDS[social_networks[0]]} {sort_enum}
             """
 
@@ -441,7 +442,7 @@ class ApiRepository:
                 coalesce_query += f"coalesce({SOCIAL_NETWORK_FIELDS[social_network]}, 0) + "
 
             query = base_query + f"""
-                and {coalesce_query} between %s and %s and is_active is true
+                and {coalesce_query} between %s and %s
                 order by total_subscribers {sort_enum} 
             """
 

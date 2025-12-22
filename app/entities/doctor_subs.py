@@ -25,6 +25,8 @@ def subs_text(count) -> str:
 
 
 def subs_by_digits(count: int) -> str:
+    if count is None:
+        return ""
     return "{:,}".format(count).replace(",", " ")
 
 
