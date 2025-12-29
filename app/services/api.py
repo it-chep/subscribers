@@ -36,6 +36,11 @@ class ApiService(object):
             telegram_short=subs_short(doctor.tg_subs_count),
             telegram_text=subs_text(doctor.tg_subs_count),
             tg_last_updated_timestamp=doctor.tg_last_updated_timestamp,
+
+            youtube_last_updated_timestamp=doctor.youtube_last_updated_timestamp,
+            youtube_subs_count=doctor.youtube_subs_count,
+            youtube_short=subs_short(doctor.youtube_subs_count),
+            youtube_text=subs_text(doctor.youtube_subs_count),
         )
 
     def get_all_subscribers_count(self):
@@ -52,13 +57,23 @@ class ApiService(object):
                 instagram_text=subs_text(doctor.inst_subs_count),
                 tg_subs_count=subs_short(doctor.tg_subs_count),
                 telegram_text=subs_text(doctor.tg_subs_count),
+                youtube_subs_count=subs_short(doctor.youtube_subs_count),
+                youtube_text=subs_text(doctor.youtube_subs_count),
             ))
 
         return result
 
-    async def create_doctor(self, doctor_id: int, instagram_channel_name: str, telegram_channel_name: str) -> None:
+    async def create_doctor(
+            self,
+            doctor_id: int,
+            instagram_channel_name: str,
+            telegram_channel_name: str,
+            youtube_channel_name: str
+    ) -> None:
         try:
-            self.repository.create_doctor_subscriber(doctor_id, instagram_channel_name, telegram_channel_name)
+            self.repository.create_doctor_subscriber(
+                doctor_id, instagram_channel_name, telegram_channel_name, youtube_channel_name
+            )
         except Exception as e:
             self.notification_client.send_error_message(str(e), "service_create_doctor")
 
@@ -92,6 +107,8 @@ class ApiService(object):
                     inst_text=subs_text(doctor_sub.inst_subs_count),
                     telegram_short=subs_short(doctor_sub.tg_subs_count),
                     telegram_text=subs_text(doctor_sub.tg_subs_count),
+                    youtube_short=subs_short(doctor_sub.youtube_subs_count),
+                    youtube_text=subs_text(doctor_sub.youtube_subs_count),
                 )
             )
 
@@ -121,6 +138,8 @@ class ApiService(object):
                     inst_text=subs_text(doctor_sub.inst_subs_count),
                     telegram_short=subs_short(doctor_sub.tg_subs_count),
                     telegram_text=subs_text(doctor_sub.tg_subs_count),
+                    youtube_short=subs_short(doctor_sub.youtube_subs_count),
+                    youtube_text=subs_text(doctor_sub.youtube_subs_count),
                 )
             )
 
@@ -138,7 +157,7 @@ class ApiService(object):
                 self.repository.update_doctor(doctor_id, instagram_channel_name, telegram_channel_name)
                 return True
             except DoctorNotFound:
-                self.repository.create_doctor_subscriber(doctor_id, instagram_channel_name, telegram_channel_name)
+                self.repository.create_doctor_subscriber(doctor_id, instagram_channel_name, telegram_channel_name, "")
                 return False
             except Exception as e:
                 self.notification_client.send_error_message(str(e), "service_update_doctor")
@@ -151,6 +170,9 @@ class ApiService(object):
                 self.notification_client.send_error_message(str(e), "service_update_doctor")
                 return False
         return None
+
+    async def check_telegram_blacklist(self, telegram: str) -> bool:
+        return self.repository.check_telegram_blacklist(telegram)
 
     # def migrate_instagram(self, doctor_id: int, instagram_channel_name: str) -> bool:
     #     """Обновление данных о докторе по его ID, если ID нет, то просто создаем доктора"""

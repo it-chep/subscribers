@@ -12,6 +12,7 @@ from app.entities.instagram_settings import InstagramSettings
 logger = logging.getLogger(__name__)
 load_dotenv()
 
+
 class UpdateSubscribersService(object):
     def __init__(
             self,
@@ -19,6 +20,7 @@ class UpdateSubscribersService(object):
             instagram_repo,
             instagram_client,
             telegram_client,
+            youtube_client,
             notification_client
     ):
         self.repo = repository
@@ -26,6 +28,7 @@ class UpdateSubscribersService(object):
         self.notification_client = notification_client
         self.instagram_client = instagram_client
         self.telegram_client = telegram_client
+        self.youtube_client = youtube_client
 
     def _refresh_instagram_request_limits(self, settings: InstagramSettings):
         """
@@ -244,18 +247,94 @@ class UpdateSubscribersService(object):
                 )
                 continue
 
+    async def _get_youtube_channels(self) -> list[DoctorSubs]:
+        # получаем последнего обновленного доктора
+        result = self.repo.get_last_updated_youtube_doctor()
+        if len(result) == 0:
+            return []
+        # пока у нас обновляется только 1 строчка
+        last_updated_doctor = result[0]
+
+        # Получаем каналы с офсетом
+        instagram_channels = self.repo.get_youtube_channels_with_offset(last_updated_doctor.id_in_subscribers)
+        # если мы всех обошли, то начинаем с id = 1, то есть offset = 0
+        if len(instagram_channels) == 0:
+            instagram_channels = self.repo.get_youtube_channels_with_offset(offset=0)
+
+        # делаем превалидацию данных, чтобы не делать лишний запросов
+        prevalidated_channels = []
+        for channel in instagram_channels:
+            if "http" in channel.youtube_channel_name:
+                self.notification_client.send_warning_not_found_doctor(
+                    doctor_id=channel.doctor_id,
+                    social_media="YOUTUBE",
+                    channel_name=channel.youtube_channel_name
+                )
+                continue
+
+            prevalidated_channels.append(channel)
+
+        return prevalidated_channels
+
+    async def _batched_update_youtube_subscribers(self):
+        await asyncio.sleep(60 * 5)
+        youtube_channels = await self._get_youtube_channels()
+
+        for channel in youtube_channels:
+            try:
+                # получаем подписчиков у доктора
+                subs_count = self.youtube_client.get_subscribers_count(channel.youtube_channel_name)
+                # комитим id последнего доктора
+                self.repo.commit_update_youtube_subscribers(
+                    subscribers_id=channel.internal_id,
+                    doctor_id=channel.doctor_id
+                )
+                if subs_count == -1:
+                    self.notification_client.send_error_message(
+                        "Ошибка получения подписчиков из ЮТУБА",
+                        "_batched_update_youtube_subscribers"
+                    )
+
+                # если подписчиков 0, то считаем, что не смогли найти доктора в соцсети, при этом не коммитим данные
+                if subs_count == 0 or not subs_count:
+                    self.notification_client.send_warning_not_found_doctor(
+                        doctor_id=channel.doctor_id,
+                        social_media="YOUTUBE",
+                        channel_name=channel.youtube_channel_name
+                    )
+                    continue
+
+                # обновляем подписчиков доктора после коммита в очереди и проверки на 0
+                self.repo.update_youtube_subscribers(doctor_id=channel.doctor_id, subscribers=subs_count)
+
+            except Exception as ex:
+                # комитим id последнего доктора
+                self.repo.commit_update_youtube_subscribers(
+                    subscribers_id=channel.internal_id,
+                    doctor_id=channel.doctor_id
+                )
+                self.notification_client.send_error_message(
+                    str(ex) + f"doctorID: {channel.doctor_id}, username: {str(channel.youtube_channel_name)}",
+                    "_batched_update_youtube_subscribers"
+                )
+                continue
+
     async def update_subscribers(self):
         """ Обновляет количество подписчиков """
         tasks = []
 
         inst_update = os.getenv('INST_UPDATE', '').lower() == 'true'
         tg_update = os.getenv('TG_UPDATE', '').lower() == 'true'
+        youtube_update = os.getenv('YOUTUBE_UPDATE', '').lower() == 'true'
 
         if inst_update:
             tasks.append(self._batched_update_inst_subscribers())
 
         if tg_update:
             tasks.append(self._batched_update_tg_subscribers())
+
+        if youtube_update:
+            tasks.append(self._batched_update_youtube_subscribers())
 
         if not tasks:
             return

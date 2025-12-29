@@ -29,12 +29,14 @@ class DoctorCreateBody(BaseModel):
     {
         "doctor_id": "23",
         "instagram": "it_necheporuk",
-        "telegram": "mysli_maxima"
+        "telegram": "mysli_maxima",
+        "youtube": "readydoctor"
     }
     """
     doctor_id: int
     instagram: Optional[str] = None
     telegram: Optional[str] = None
+    youtube: Optional[str] = None
 
 
 class DoctorUpdateBody(BaseModel):
@@ -48,3 +50,13 @@ class DoctorUpdateBody(BaseModel):
     instagram: Optional[str] = None
     telegram: Optional[str] = None
     is_active: Optional[bool] = None
+    youtube: Optional[str] = None
+
+
+class CheckTelegramInBlacklistRequest(BaseModel):
+    """
+    {
+        "telegram": "mysli_maxima"
+    }
+    """
+    telegram: Optional[str] = None

@@ -25,6 +25,8 @@ def subs_text(count) -> str:
 
 
 def subs_by_digits(count: int) -> str:
+    if count is None:
+        return ""
     return "{:,}".format(count).replace(",", " ")
 
 
@@ -68,14 +70,20 @@ class DoctorSubs(BaseModel):
     # подписан ли бот на этот тг канал
     tg_has_subscribed: Optional[bool] = False
 
+    # время последнего обновления подписчиков
+    youtube_last_updated_timestamp: Optional[datetime.datetime] = None
+    # количество подписчиков
+    youtube_subs_count: int = 0
+    # название аккаунта
+    youtube_channel_name: str = ""
+
 
 class DoctorSubsByIDs(BaseModel):
     doctor_id: int
     # количество подписчиков
     inst_subs_count: int = 0
-
-    # количество подписчиков
     tg_subs_count: int = 0
+    youtube_subs_count: int = 0
 
 
 class UpdatedSubsQueue(BaseModel):
