@@ -75,6 +75,8 @@ async def info_by_ids(doctor_ids: str):
             "telegram_subs_text": dto.telegram_text,
             "youtube_subs_count": dto.youtube_subs_count,
             "youtube_subs_text": dto.youtube_text,
+            "vk_subs_count": dto.vk_subs_count,
+            "vk_subs_text": dto.vk_text,
         }
 
     return JSONResponse(
@@ -125,6 +127,8 @@ async def doctors_filter_with_ids(request: DoctorsFilterBody):
                 "telegram_text": doctor.telegram_text,
                 "youtube_short": doctor.youtube_short,
                 "youtube_text": doctor.youtube_text,
+                "vk_short": doctor.vk_short,
+                "vk_text": doctor.vk_text,
             }
         })
 
@@ -223,6 +227,8 @@ async def doctors_filter(
                 "telegram_text": doctor.telegram_text,
                 "youtube_short": doctor.youtube_short,
                 "youtube_text": doctor.youtube_text,
+                "vk_short": doctor.vk_short,
+                "vk_text": doctor.vk_text,
             }
         })
 
@@ -259,6 +265,10 @@ async def doctor_subscribers(doctor_id: int):
     if doctor.youtube_last_updated_timestamp:
         youtube_formatted_date = doctor.youtube_last_updated_timestamp.strftime("%d.%m.%Y")
 
+    vk_formatted_date = None
+    if doctor.vk_last_updated_timestamp:
+        vk_formatted_date = doctor.vk_last_updated_timestamp.strftime("%d.%m.%Y")
+
     return {
         "doctor_id": doctor.doctor_id,
 
@@ -276,6 +286,11 @@ async def doctor_subscribers(doctor_id: int):
         "youtube_text": doctor.youtube_text,
         "youtube_last_updated_date": youtube_formatted_date,
         "youtube_short": doctor.youtube_short,
+
+        "vk": doctor.vk_subs_count,
+        "vk_text": doctor.vk_text,
+        "vk_last_updated_date": vk_formatted_date,
+        "vk_short": doctor.vk_short,
     }
 
 
@@ -283,7 +298,7 @@ async def doctor_subscribers(doctor_id: int):
 async def create_doctor(request: DoctorCreateBody):
     """Создает нового доктора в базе"""
     try:
-        await api_service.create_doctor(request.doctor_id, request.instagram, request.telegram, request.youtube)
+        await api_service.create_doctor(request.doctor_id, request.instagram, request.telegram, request.youtube, request.vk)
     except Exception as e:
         print('Ошибка при создании доктора create_doctor', e)
         return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST, content=str(e))

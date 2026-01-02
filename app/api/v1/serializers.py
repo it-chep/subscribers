@@ -30,13 +30,15 @@ class DoctorCreateBody(BaseModel):
         "doctor_id": "23",
         "instagram": "it_necheporuk",
         "telegram": "mysli_maxima",
-        "youtube": "readydoctor"
+        "youtube": "readydoctor",
+        "vk": "readydoctor"
     }
     """
     doctor_id: int
     instagram: Optional[str] = None
     telegram: Optional[str] = None
     youtube: Optional[str] = None
+    vk: Optional[str] = None
 
 
 class DoctorUpdateBody(BaseModel):

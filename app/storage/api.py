@@ -11,6 +11,7 @@ SOCIAL_NETWORK_FIELDS = {
     SocialNetworkType.INSTAGRAM: "inst_subs_count",
     SocialNetworkType.TELEGRAM: "tg_subs_count",
     SocialNetworkType.YOUTUBE: "youtube_subs_count",
+    SocialNetworkType.VK: "vk_subs_count",
 }
 
 
@@ -31,7 +32,10 @@ class ApiRepository:
                 tg_last_updated,
                 youtube_channel_name,
                 youtube_last_updated,
-                youtube_subs_count
+                youtube_subs_count,
+                vk_channel_name,
+                vk_last_updated,
+                vk_subs_count
             from doctors 
             where doctor_id = %s;
         """
@@ -47,10 +51,12 @@ class ApiRepository:
                 telegram_channel_name=result[5] or "",
                 tg_subs_count=result[6] or 0,
                 tg_last_updated_timestamp=result[7],
-
                 youtube_channel_name=result[8] or "",
                 youtube_last_updated_timestamp=result[9],
                 youtube_subs_count=result[10] or 0,
+                vk_channel_name=result[11] or "",
+                vk_last_updated_timestamp=result[12],
+                vk_subs_count=result[13] or 0,
             )
         except Exception as e:
             raise DoctorNotFound(doctor_id=doctor_id)
@@ -63,7 +69,8 @@ class ApiRepository:
                 doctor_id, 
                 inst_subs_count,
                 tg_subs_count,
-                youtube_subs_count
+                youtube_subs_count,
+                vk_subs_count
             from doctors 
             where doctor_id = ANY(%s);
         """
@@ -78,6 +85,7 @@ class ApiRepository:
                     inst_subs_count=r[1] or 0,
                     tg_subs_count=r[2] or 0,
                     youtube_subs_count=r[3] or 0,
+                    vk_subs_count=r[4] or 0,
                 ))
 
         except Exception as e:
@@ -88,8 +96,8 @@ class ApiRepository:
     def get_all_subscribers_count(self) -> (int, Optional[datetime.datetime]):
         query = f""" 
             select 
-                coalesce(sum(tg_subs_count), 0) + coalesce(sum(inst_subs_count),0) + coalesce(sum(youtube_subs_count), 0) AS total_subscribers,
-                least(min(tg_last_updated), min(inst_last_updated), min(youtube_last_updated)) AS last_updated_timestamp
+                coalesce(sum(tg_subs_count), 0) + coalesce(sum(inst_subs_count),0) + coalesce(sum(youtube_subs_count), 0) + coalesce(sum(vk_subs_count), 0) AS total_subscribers,
+                least(min(tg_last_updated), min(inst_last_updated), min(youtube_last_updated), min(vk_last_updated)) AS last_updated_timestamp
             from doctors 
             where is_active is true
         """
@@ -108,16 +116,18 @@ class ApiRepository:
             self, doctor_id: int,
             instagram_channel_name: str,
             telegram_channel_name: str,
-            youtube_channel_name: str
+            youtube_channel_name: str,
+            vk_channel_name: str,
     ) -> None:
         query = f"""insert into doctors (
                 doctor_id, 
                 instagram_channel_name,
                 telegram_channel_name,
                 youtube_channel_name,
+                vk_channel_name,
                 tg_has_subscribed
         ) 
-        values (%s, %s, %s, %s, false)
+        values (%s, %s, %s, %s, %s, false)
         on conflict (doctor_id) do nothing
         returning id;
         """
@@ -125,7 +135,7 @@ class ApiRepository:
         try:
             self.db.execute(
                 query,
-                (doctor_id, instagram_channel_name, telegram_channel_name, youtube_channel_name)
+                (doctor_id, instagram_channel_name, telegram_channel_name, youtube_channel_name, vk_channel_name)
             )
         except Exception as e:
             print("Ошибка при создании доктора в таблице", e)
@@ -164,7 +174,7 @@ class ApiRepository:
         base_query = f""" 
         select 
             count(*) as doctors_count, 
-            coalesce(sum(tg_subs_count), 0) + coalesce(sum(inst_subs_count), 0) + coalesce(sum(youtube_subs_count), 0) AS total_subscribers
+            coalesce(sum(tg_subs_count), 0) + coalesce(sum(inst_subs_count), 0) + coalesce(sum(youtube_subs_count), 0) + coalesce(sum(vk_subs_count), 0) AS total_subscribers
         from doctors
         where doctor_id = any(%s::bigint[])
         """
@@ -230,7 +240,7 @@ class ApiRepository:
         base_query = f""" 
         select 
             count(*) as doctors_count, 
-            coalesce(sum(tg_subs_count), 0) + coalesce(sum(inst_subs_count), 0) + coalesce(sum(youtube_subs_count), 0) AS total_subscribers
+            coalesce(sum(tg_subs_count), 0) + coalesce(sum(inst_subs_count), 0) + coalesce(sum(youtube_subs_count), 0) + coalesce(sum(vk_subs_count), 0) AS total_subscribers
         from doctors
         where is_active is true
         """
@@ -312,7 +322,8 @@ class ApiRepository:
                        coalesce(tg_subs_count, 0),
                        coalesce(inst_subs_count, 0),
                        coalesce(youtube_subs_count, 0),
-                       coalesce(inst_subs_count, 0) + coalesce(tg_subs_count, 0) + coalesce(youtube_subs_count, 0) AS total_subscribers
+                       coalesce(vk_subs_count, 0),
+                       coalesce(inst_subs_count, 0) + coalesce(tg_subs_count, 0) + coalesce(youtube_subs_count, 0) + coalesce(vk_subs_count, 0) AS total_subscribers
                    from doctors
                    where doctor_id = any(%s::bigint[]) and is_active is true
                """
@@ -373,6 +384,7 @@ class ApiRepository:
                         tg_subs_count=int(result[1]),
                         inst_subs_count=int(result[2]),
                         youtube_subs_count=int(result[3]),
+                        vk_subs_count=int(result[4]),
                     )
                 )
 
@@ -404,7 +416,8 @@ class ApiRepository:
                 tg_subs_count,
                 inst_subs_count,
                 youtube_subs_count,
-                coalesce(inst_subs_count, 0) + coalesce(tg_subs_count, 0) + coalesce(youtube_subs_count, 0) AS total_subscribers
+                vk_subs_count,
+                coalesce(inst_subs_count, 0) + coalesce(tg_subs_count, 0) + coalesce(youtube_subs_count, 0) + coalesce(vk_subs_count, 0) AS total_subscribers
             from doctors
             where is_active is true 
         """
@@ -464,6 +477,7 @@ class ApiRepository:
                         tg_subs_count=result[1] or 0,
                         inst_subs_count=result[2] or 0,
                         youtube_subs_count=result[3] or 0,
+                        vk_subs_count=result[4] or 0,
                     )
                 )
 

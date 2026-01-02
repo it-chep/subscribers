@@ -3,6 +3,7 @@ from clients.telegram import TelegramClient
 from clients.instagram import InstagramGraphApiClient
 from clients.notifications.salebot import SaleBotClient
 from clients.youtube import YouTubeClient
+from clients.vk import VkClient
 
 # инициализация репозиториев
 from app.storage.api import ApiRepository
@@ -18,6 +19,7 @@ telegram_client = TelegramClient()
 instagram_client = InstagramGraphApiClient()
 notification_client = SaleBotClient()
 youtube_client = YouTubeClient()
+vk_client = VkClient()
 # ____________________________________________
 
 # инициализация репозиториев
@@ -33,6 +35,7 @@ update_subs_service = UpdateSubscribersService(
     instagram_client=instagram_client,
     telegram_client=telegram_client,
     youtube_client=youtube_client,
+    vk_client=vk_client,
     notification_client=notification_client
 )
 

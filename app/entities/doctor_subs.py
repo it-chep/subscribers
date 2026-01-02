@@ -77,6 +77,13 @@ class DoctorSubs(BaseModel):
     # название аккаунта
     youtube_channel_name: str = ""
 
+    # время последнего обновления подписчиков
+    vk_last_updated_timestamp: Optional[datetime.datetime] = None
+    # количество подписчиков
+    vk_subs_count: int = 0
+    # название аккаунта
+    vk_channel_name: str = ""
+
 
 class DoctorSubsByIDs(BaseModel):
     doctor_id: int
@@ -84,6 +91,7 @@ class DoctorSubsByIDs(BaseModel):
     inst_subs_count: int = 0
     tg_subs_count: int = 0
     youtube_subs_count: int = 0
+    vk_subs_count: int = 0
 
 
 class UpdatedSubsQueue(BaseModel):

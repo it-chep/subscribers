@@ -38,6 +38,10 @@ class YouTubeConfig(BaseModel):
     api_key: str
 
 
+class VKConfig(BaseModel):
+    api_key: str
+
+
 class Config(BaseModel):
     db: DbConfig
     telegram: TelegramConfig
@@ -45,6 +49,7 @@ class Config(BaseModel):
     salebot: SalebotConfig
     instagramGraphApi: InstagramGraphApiConfig
     youtube: YouTubeConfig
+    vk: VKConfig
 
     @classmethod
     def load(cls, path: str = "config/values.yaml") -> "Config":
