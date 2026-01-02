@@ -265,3 +265,84 @@ class UpdateSubscribersRepository:
                 """
         self.db.execute(query, (subscribers, doctor_id))
         self.db.commit()
+        
+    def commit_update_vk_subscribers(self, subscribers_id: int, doctor_id: int):
+        """Коммитит обновление подписчиков в update_vk_subscribers_queue"""
+        query = """
+                insert into update_vk_subscribers_queue (id, last_updated_id, last_updated_at, id_in_subscribers)
+                values (1, %s, now(), %s)
+                on conflict (id) do update set last_updated_id   = excluded.last_updated_id,
+                                               last_updated_at   = now(),
+                                               id_in_subscribers = excluded.id_in_subscribers
+                """
+        self.db.execute(query, (doctor_id, subscribers_id))
+        self.db.commit()
+
+    def get_last_updated_vk_doctor(self) -> List[UpdatedSubsQueue]:
+        """Получение данных об обновлении подписчиков из update_vk_subscribers_queue"""
+        query = """
+                select id, last_updated_id, id_in_subscribers, last_updated_at
+                from update_vk_subscribers_queue;
+                """
+
+        try:
+            result = self.db.select(query)
+            # если никого нет, значит это первое обновление
+            if len(result) == 0:
+                doctors = self.get_vk_channels_with_offset(0)
+                self.commit_update_vk_subscribers(doctors[0].internal_id, doctors[0].doctor_id)
+                return []
+
+            return [
+                UpdatedSubsQueue(
+                    _id=row[0],
+                    last_updated_id=row[1],
+                    id_in_subscribers=row[2],
+                    last_updated_at=row[3],
+                ) for row in result
+            ]
+        except Exception as e:
+            print(f"Error fetching vk last_updated_doctor: {str(e)}")
+            raise
+
+    def get_vk_channels_with_offset(self, offset: int) -> List[DoctorSubs]:
+        """Получает список всех докторов с их vk-каналами с оффсетом и лимитом для обновления батчами"""
+        query = """
+                select id,
+                       doctor_id,
+                       vk_channel_name,
+                       vk_subs_count,
+                       vk_last_updated
+                from doctors
+                where vk_channel_name is not null
+                  and vk_channel_name != ''
+                  and id > %s
+                order by id
+                limit 2
+                """
+
+        try:
+            result = self.db.select(query, (offset,))
+            return [
+                DoctorSubs(
+                    internal_id=row[0],
+                    doctor_id=row[1],
+                    vk_channel_name=row[2],
+                    vk_subs_count=row[3] or 0,
+                    vk_last_updated_timestamp=row[4]
+                ) for row in result
+            ]
+        except Exception as e:
+            print(f"Error fetching vk channels with offset: {str(e)}")
+            raise
+
+    def update_vk_subscribers(self, doctor_id: int, subscribers: int):
+        """Обновляет количество подписчиков в VK"""
+        query = """
+                update doctors
+                set vk_subs_count   = %s,
+                    vk_last_updated = now()
+                where doctor_id = %s
+                """
+        self.db.execute(query, (subscribers, doctor_id))
+        self.db.commit()

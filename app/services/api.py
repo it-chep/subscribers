@@ -41,6 +41,11 @@ class ApiService(object):
             youtube_subs_count=doctor.youtube_subs_count,
             youtube_short=subs_short(doctor.youtube_subs_count),
             youtube_text=subs_text(doctor.youtube_subs_count),
+
+            vk_last_updated_timestamp=doctor.vk_last_updated_timestamp,
+            vk_subs_count=doctor.vk_subs_count,
+            vk_short=subs_short(doctor.vk_subs_count),
+            vk_text=subs_text(doctor.vk_subs_count),
         )
 
     def get_all_subscribers_count(self):
@@ -59,6 +64,8 @@ class ApiService(object):
                 telegram_text=subs_text(doctor.tg_subs_count),
                 youtube_subs_count=subs_short(doctor.youtube_subs_count),
                 youtube_text=subs_text(doctor.youtube_subs_count),
+                vk_subs_count=subs_short(doctor.vk_subs_count),
+                vk_text=subs_text(doctor.vk_subs_count),
             ))
 
         return result
@@ -68,11 +75,14 @@ class ApiService(object):
             doctor_id: int,
             instagram_channel_name: str,
             telegram_channel_name: str,
-            youtube_channel_name: str
+            youtube_channel_name: str,
+            vk_channel_name: str,
     ) -> None:
         try:
             self.repository.create_doctor_subscriber(
-                doctor_id, instagram_channel_name, telegram_channel_name, youtube_channel_name
+                doctor_id, instagram_channel_name,
+                telegram_channel_name, youtube_channel_name,
+                vk_channel_name
             )
         except Exception as e:
             self.notification_client.send_error_message(str(e), "service_create_doctor")
@@ -109,6 +119,8 @@ class ApiService(object):
                     telegram_text=subs_text(doctor_sub.tg_subs_count),
                     youtube_short=subs_short(doctor_sub.youtube_subs_count),
                     youtube_text=subs_text(doctor_sub.youtube_subs_count),
+                    vk_short=subs_short(doctor_sub.vk_subs_count),
+                    vk_text=subs_text(doctor_sub.vk_subs_count),
                 )
             )
 
@@ -140,6 +152,8 @@ class ApiService(object):
                     telegram_text=subs_text(doctor_sub.tg_subs_count),
                     youtube_short=subs_short(doctor_sub.youtube_subs_count),
                     youtube_text=subs_text(doctor_sub.youtube_subs_count),
+                    vk_short=subs_short(doctor_sub.vk_subs_count),
+                    vk_text=subs_text(doctor_sub.vk_subs_count),
                 )
             )
 

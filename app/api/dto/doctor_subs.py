@@ -20,21 +20,21 @@ class DoctorSubsDTO:
 
     ### Telegram
     tg_last_updated_timestamp: Optional[datetime.datetime]
-    # количество подписчиков
     tg_subs_count: int
-    # сокращенный вид количества подписчиков "1,3м", "300к", "9999", "10,3к"
     telegram_short: str
-    # текст отображения "подписчика", "подписчиков"
     telegram_text: str
 
     ### YouTube
     youtube_last_updated_timestamp: Optional[datetime.datetime]
-    # количество подписчиков
     youtube_subs_count: int
-    # сокращенный вид количества подписчиков "1,3м", "300к", "9999", "10,3к"
     youtube_short: str
-    # текст отображения "подписчика", "подписчиков"
     youtube_text: str
+
+    ### Vk
+    vk_last_updated_timestamp: Optional[datetime.datetime]
+    vk_subs_count: int
+    vk_short: str
+    vk_text: str
 
 
 @dataclass
@@ -42,32 +42,29 @@ class DoctorSubsFilterDTO:
     doctor_id: int
     # сокращенный вид количества подписчиков "1,3м", "300к", "9999", "10,3к"
     inst_short: str
+    telegram_short: str
+    youtube_short: str
+    vk_short: str
+
     # текст отображения "подписчика", "подписчиков"
     inst_text: str
-
-    # сокращенный вид количества подписчиков "1,3м", "300к", "9999", "10,3к"
-    telegram_short: str
-    # текст отображения "подписчика", "подписчиков"
     telegram_text: str
-
-    # сокращенный вид количества подписчиков "1,3м", "300к", "9999", "10,3к"
-    youtube_short: str
-    # текст отображения "подписчика", "подписчиков"
     youtube_text: str
+    vk_text: str
 
 
 @dataclass
 class DoctorSubsByIDsDTO:
     doctor_id: int
+
     # количество подписчиков
     inst_subs_count: str = "0"
+    tg_subs_count: str = "0"
+    youtube_subs_count: str = "0"
+    vk_subs_count: str = "0"
+
     # название аккаунта
     instagram_text: str = ""
-
-    # количество подписчиков
-    tg_subs_count: str = "0"
-    # название аккаунта
     telegram_text: str = ""
-
-    youtube_subs_count: str = "0"
     youtube_text: str = ""
+    vk_text: str = ""
