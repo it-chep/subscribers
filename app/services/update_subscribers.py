@@ -365,7 +365,7 @@ class UpdateSubscribersService(object):
                 )
                 if subs_count == -1:
                     self.notification_client.send_error_message(
-                        "Ошибка получения подписчиков из ЮТУБА",
+                        "Ошибка получения подписчиков из ВК",
                         "_batched_update_vk_subscribers"
                     )
 
@@ -373,7 +373,7 @@ class UpdateSubscribersService(object):
                 if subs_count == 0 or not subs_count:
                     self.notification_client.send_warning_not_found_doctor(
                         doctor_id=channel.doctor_id,
-                        social_media="vk",
+                        social_media="ВК",
                         channel_name=channel.vk_channel_name
                     )
                     continue

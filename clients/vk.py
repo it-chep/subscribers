@@ -31,4 +31,4 @@ class VkClient:
             return data['response']['count']
 
         except Exception as e:
-            return 0
+            return -1
