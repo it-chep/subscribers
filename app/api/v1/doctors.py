@@ -8,7 +8,7 @@ from starlette.responses import JSONResponse
 from app.entities.sorted import SortedType
 from app.init_logic import api_service
 from app.api.v1.serializers import DoctorCreateBody, DoctorUpdateBody, DoctorsFilterBody, \
-    CheckTelegramInBlacklistRequest
+    CheckTelegramInBlacklistRequest, UpdateDoctorSubscribersBody
 
 router = APIRouter()
 
@@ -298,7 +298,8 @@ async def doctor_subscribers(doctor_id: int):
 async def create_doctor(request: DoctorCreateBody):
     """Создает нового доктора в базе"""
     try:
-        await api_service.create_doctor(request.doctor_id, request.instagram, request.telegram, request.youtube, request.vk)
+        await api_service.create_doctor(request.doctor_id, request.instagram, request.telegram, request.youtube,
+                                        request.vk)
     except Exception as e:
         print('Ошибка при создании доктора create_doctor', e)
         return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST, content=str(e))
@@ -306,6 +307,25 @@ async def create_doctor(request: DoctorCreateBody):
         status_code=status.HTTP_200_OK,
         content={"message": f"Успешно создал запись DOC: {request.doctor_id}, канал:{request.telegram}"}
     )
+
+
+@router.post('/doctors/{doctor_id}/update_subscribers/')
+async def update_subscribers(doctor_id: int, request: UpdateDoctorSubscribersBody):
+    """Обновляет подписчиков в базе через ручку"""
+    try:
+
+        for item in request.items:
+            await api_service.update_subscribers(doctor_id, item.key, item.subs_count)
+
+        return JSONResponse(
+            status_code=status.HTTP_200_OK,
+            content={
+                "message": f"Успешно обновлены подписчики для врача ID: {doctor_id}",
+            }
+        )
+    except Exception as e:
+        print(f'Ошибка при обновлении подписчиков для врача {doctor_id}:', e)
+        return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST, content=str(e))
 
 
 @router.patch('/doctors/{doctor_id}/')

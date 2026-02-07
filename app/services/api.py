@@ -188,6 +188,9 @@ class ApiService(object):
     async def check_telegram_blacklist(self, telegram: str) -> bool:
         return self.repository.check_telegram_blacklist(telegram)
 
+    async def update_subscribers(self, doctor_id: int, channel_type: str, subs_count: int):
+        return self.repository.update_subscribers(doctor_id, channel_type, subs_count)
+
     # def migrate_instagram(self, doctor_id: int, instagram_channel_name: str) -> bool:
     #     """Обновление данных о докторе по его ID, если ID нет, то просто создаем доктора"""
     #     try:
