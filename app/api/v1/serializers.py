@@ -55,6 +55,27 @@ class DoctorUpdateBody(BaseModel):
     youtube: Optional[str] = None
 
 
+class SubscriberItem(BaseModel):
+    """Модель одного элемента подписчиков"""
+    key: str
+    subs_count: int
+
+
+class UpdateDoctorSubscribersBody(BaseModel):
+    """
+    Тело запроса для обновления подписчиков врача
+    {
+        "items": [
+            {"key": "instagram", "subs_count": 10000},
+            {"key": "telegram", "subs_count": 5000},
+            {"key": "youtube", "subs_count": 20000},
+            {"key": "vk", "subs_count": 15000}
+        ]
+    }
+    """
+    items: List[SubscriberItem]
+
+
 class CheckTelegramInBlacklistRequest(BaseModel):
     """
     {

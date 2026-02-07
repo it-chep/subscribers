@@ -540,6 +540,20 @@ class ApiRepository:
         except Exception as e:
             print("Ошибка при поиске канала в чс", e)
 
+    # update_subscribers Обновление подписчиков
+    def update_subscribers(self, doctor_id: int, channel_type: str, subs_count: int):
+        query = f"""
+        update doctors
+            set {channel_type}_subs_count = %s, 
+                {channel_type}_last_updated = now()
+        where doctor_id = %s
+        """
+
+        try:
+            self.db.execute_with_result(query, (subs_count, doctor_id))
+        except Exception as e:
+            print("Ошибка при обновлении подписчиков", e)
+
     # def migrate_instagram(self, doctor_id: int, instagram_channel_name: str):
     #     query = f"""
     #     update doctors
